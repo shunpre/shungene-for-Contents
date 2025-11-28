@@ -323,6 +323,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                         <option value="analysis_material">商品分析資料(デフォルト)</option>
                         <option value="product">商品画像</option>
                         <option value="character">キャラクター/モデル</option>
+                        <option value="design_reference">デザイン参考(トンマナ)</option>
                         <option value="voice">お客様の声(人物)</option>
                         <option value="other">その他素材</option>
                       </select>

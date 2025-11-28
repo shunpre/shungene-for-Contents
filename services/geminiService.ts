@@ -164,6 +164,7 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     **分析のステップ:**
     1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
        - 特に**「商品分析資料」**として指定されたファイルがある場合は、その内容を最優先で分析の根拠としてください。
+       - **「デザイン参考(トンマナ)」**として指定された画像がある場合は、その視覚的な雰囲気（色使い、フォントの印象、高級感/親しみやすさ等）を言語化し、「トーン & マナー」の分析に反映させてください。
     2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
     
     **重要: 情報が取得できない場合の対応**
@@ -511,6 +512,7 @@ export const generateSwipeScreenImage = async (
   const productImages = imageFiles.filter(f => f.assetType === 'product');
   const characterImages = imageFiles.filter(f => f.assetType === 'character');
   const voiceImages = imageFiles.filter(f => f.assetType === 'voice');
+  const designRefImages = imageFiles.filter(f => f.assetType === 'design_reference');
   const otherImages = imageFiles.filter(f => !f.assetType || f.assetType === 'other');
 
   // Create prompt based on design spec and copy
@@ -544,6 +546,13 @@ export const generateSwipeScreenImage = async (
     - Use the provided character/model image(s) as the main subject.
     - Maintain their facial features and style.
     - If a product image is ALSO provided, show this character holding/using the product.
+    ` : ''}
+
+    ${designRefImages.length > 0 ? `
+    [DESIGN REFERENCE IMAGES PROVIDED]
+    - **STYLE TRANSFER:** Use these images as a strict reference for the visual style, color grading, and mood.
+    - Mimic the lighting, composition, and "vibe" of these references.
+    - Do NOT copy the content, but copy the *style*.
     ` : ''}
 
     ${voiceImages.length > 0 && screen.type === 'proof' ? `
