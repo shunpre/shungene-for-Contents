@@ -159,13 +159,16 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     
     提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
     
+    提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
+    
     **分析のステップ:**
     1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
     2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
     
-    **注意点:**
-    - URLが検索でヒットしない場合でも、URLの文字列や他の提供情報から最大限推測してプロファイルを完成させてください。
-    - 「情報が足りない」として空欄にするのではなく、推測される一般的な内容で埋めてください。
+    **重要: 情報が取得できない場合の対応**
+    - URLが検索でヒットしない、またはアクセスできない場合でも、**絶対に「不明」「未設定」などの空欄で返さないでください。**
+    - その場合は、URLの文字列や一般的な業界知識から推測し、**「もしこの製品が存在するとしたら、どのようなプロファイルが理想的か？」という観点で、架空の（しかし説得力のある）プロファイルを生成してください。**
+    - ターゲット層や悩みは、そのカテゴリーにおける一般的なものを適用してください。
     
     あなたのタスクは、これらを分析し、**「まだ商品の必要性に気づいていない潜在層」** に響くような切り口を見つけることです。
     
@@ -212,6 +215,8 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
         tools: [{ googleSearch: {} }] // Enable Google Search grounding
       }
     }));
+
+    console.log("Raw Gemini Response (Step 1):", response.text); // Debug logging
 
     const parsed = parseJsonResponse<ProductProfile>(response.text);
 
