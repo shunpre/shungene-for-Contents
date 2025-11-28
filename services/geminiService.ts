@@ -2,7 +2,39 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ProductProfile, UploadedFile, SwipeLP, SwipeScreen, DesignSpec } from '../types';
 
 // Helper to get a fresh client instance with the current API key
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = (apiKey: string) => new GoogleGenAI({ apiKey });
+
+// Helper for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper for retry with exponential backoff
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  retries: number = 3,
+  initialDelay: number = 2000,
+  factor: number = 2
+): Promise<T> {
+  let currentDelay = initialDelay;
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      // Check for 429 (Resource Exhausted) or 503 (Service Unavailable)
+      const isRateLimit = error.message?.includes('429') || error.status === 429 || error.message?.includes('quota');
+      const isServerOverload = error.message?.includes('503') || error.status === 503;
+
+      if ((isRateLimit || isServerOverload) && i < retries - 1) {
+        console.warn(`API Rate Limit/Error hit. Retrying in ${currentDelay}ms... (Attempt ${i + 1}/${retries})`);
+        await delay(currentDelay);
+        currentDelay *= factor;
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
 
 const PRODUCT_PROFILE_SCHEMA: Schema = {
   type: Type.OBJECT,
@@ -117,7 +149,7 @@ const JAPANESE_COPYWRITER_ROLE = `
 - 抽象的な表現（「幸せ」「成功」など具体性のない言葉）
 `;
 
-export const analyzeProductContext = async (files: UploadedFile[]): Promise<ProductProfile> => {
+export const analyzeProductContext = async (files: UploadedFile[], apiKey: string): Promise<ProductProfile> => {
   if (files.length === 0) {
     throw new Error("分析するファイルがありません。");
   }
@@ -164,15 +196,15 @@ export const analyzeProductContext = async (files: UploadedFile[]): Promise<Prod
   }
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
       contents: { parts: parts },
       config: {
         temperature: 0.3,
         tools: [{ googleSearch: {} }] // Enable Google Search grounding
       }
-    });
+    }));
 
     return parseJsonResponse<ProductProfile>(response.text);
 
@@ -182,7 +214,7 @@ export const analyzeProductContext = async (files: UploadedFile[]): Promise<Prod
   }
 };
 
-export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP> => {
+export const generateSwipeLP = async (profile: ProductProfile, apiKey: string): Promise<SwipeLP> => {
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
 
@@ -219,15 +251,15 @@ export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP>
   `;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
       contents: prompt,
       config: {
         temperature: 0.7,
-        thinkingConfig: { thinkingBudget: 4096 } // Use thinking for structure
+        // thinkingConfig: { thinkingBudget: 4096 } // Removed thinking for flash model compatibility or speed
       }
-    });
+    }));
 
     const parsed = parseJsonResponse<SwipeLP>(response.text);
 
@@ -262,7 +294,8 @@ export const generateSingleDesignSpec = async (
   targetScreen: SwipeScreen,
   allScreens: SwipeScreen[],
   uploadedFiles: UploadedFile[],
-  concept: string
+  concept: string,
+  apiKey: string
 ): Promise<DesignSpec> => {
 
   const fileList = uploadedFiles.map(f => `- ${f.name} (${f.mimeType || 'unknown'})`).join('\n');
@@ -311,14 +344,14 @@ export const generateSingleDesignSpec = async (
   `;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Strong reasoning for design layout
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp', // Strong reasoning for design layout
       contents: prompt,
       config: {
         temperature: 0.5,
       }
-    });
+    }));
 
     return parseJsonResponse<DesignSpec>(response.text);
 
@@ -331,7 +364,8 @@ export const generateSingleDesignSpec = async (
 export const regenerateSwipeScreen = async (
   profile: ProductProfile,
   currentScreen: SwipeScreen,
-  instruction: string
+  instruction: string,
+  apiKey: string
 ): Promise<SwipeScreen> => {
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
@@ -364,14 +398,14 @@ export const regenerateSwipeScreen = async (
   `;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
       contents: prompt,
       config: {
         temperature: 0.7,
       }
-    });
+    }));
 
     return parseJsonResponse<SwipeScreen>(response.text);
   } catch (error) {
@@ -383,7 +417,8 @@ export const regenerateSwipeScreen = async (
 export const regenerateDesignSpec = async (
   currentScreen: SwipeScreen,
   uploadedFiles: UploadedFile[],
-  instruction: string
+  instruction: string,
+  apiKey: string
 ): Promise<DesignSpec> => {
   const fileList = uploadedFiles.map(f => `- ${f.name}`).join('\n');
 
@@ -416,14 +451,14 @@ export const regenerateDesignSpec = async (
   `;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
       contents: prompt,
       config: {
         temperature: 0.7,
       }
-    });
+    }));
 
     return parseJsonResponse<DesignSpec>(response.text);
   } catch (error) {
@@ -434,7 +469,8 @@ export const regenerateDesignSpec = async (
 
 export const generateSwipeScreenImage = async (
   screen: SwipeScreen,
-  uploadedFiles: UploadedFile[]
+  uploadedFiles: UploadedFile[],
+  apiKey: string
 ): Promise<string> => {
   if (!screen.designSpec) throw new Error("デザイン指示書がありません。");
 
@@ -464,17 +500,17 @@ export const generateSwipeScreenImage = async (
   const parts: any[] = [{ text: prompt }];
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+    const ai = getAI(apiKey);
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
       contents: { parts: parts },
       config: {
-        imageConfig: {
-          aspectRatio: "9:16",
-          imageSize: "1K"
-        }
+        // imageConfig: {
+        //   aspectRatio: "9:16",
+        //   imageSize: "1K"
+        // }
       }
-    });
+    }));
 
     // Extract image data
     for (const part of response.candidates?.[0]?.content?.parts || []) {

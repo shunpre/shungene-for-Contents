@@ -67,10 +67,10 @@ export interface AnalysisResponse {
 
 // Augment window for AI Studio API Key selection
 declare global {
-  // Existing environment already defines window.aistudio as AIStudio.
-  // We augment the AIStudio interface to include the methods we need.
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
   }
 }
