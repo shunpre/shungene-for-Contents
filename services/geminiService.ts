@@ -159,11 +159,13 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     
     提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
     
-    **重要: Google検索ツールを積極的に使用してください**
-    提供された情報だけでなく、Google検索を使用して以下の情報を補完・深掘りしてください。
-    - 競合製品や類似サービスの訴求ポイント
-    - ターゲット層のリアルな悩み（Yahoo!知恵袋やSNSの声を想定）
-    - 市場のトレンドや最新のキーワード
+    **分析のステップ:**
+    1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
+    2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
+    
+    **注意点:**
+    - URLが検索でヒットしない場合でも、URLの文字列や他の提供情報から最大限推測してプロファイルを完成させてください。
+    - 「情報が足りない」として空欄にするのではなく、推測される一般的な内容で埋めてください。
     
     あなたのタスクは、これらを分析し、**「まだ商品の必要性に気づいていない潜在層」** に響くような切り口を見つけることです。
     
@@ -211,7 +213,24 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
       }
     }));
 
-    return parseJsonResponse<ProductProfile>(response.text);
+    const parsed = parseJsonResponse<ProductProfile>(response.text);
+
+    // SANITIZATION: Ensure arrays and strings are present to prevent UI crashes
+    if (!parsed.painPoints || !Array.isArray(parsed.painPoints)) {
+      parsed.painPoints = [];
+    }
+    if (!parsed.solutions || !Array.isArray(parsed.solutions)) {
+      parsed.solutions = [];
+    }
+    if (!parsed.toneOfVoice || typeof parsed.toneOfVoice !== 'string') {
+      parsed.toneOfVoice = "信頼感, プロフェッショナル";
+    }
+    if (!parsed.productName) parsed.productName = "名称未設定";
+    if (!parsed.category) parsed.category = "未分類";
+    if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
+    if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
+
+    return parsed;
 
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
