@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link } from 'lucide-react';
+import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search } from 'lucide-react';
 import { UploadedFile } from '../types';
 import { processFiles } from '../services/fileHelper';
 
@@ -11,17 +11,19 @@ interface UploadSectionProps {
   isAnalyzing: boolean;
 }
 
-export const UploadSection: React.FC<UploadSectionProps> = ({ 
-  files, 
-  onFilesAdded, 
+export const UploadSection: React.FC<UploadSectionProps> = ({
+  files,
+  onFilesAdded,
   onFileRemoved,
   onAnalyze,
-  isAnalyzing 
+  isAnalyzing
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'url'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'url' | 'search'>('upload');
   const [pastedText, setPastedText] = useState('');
   const [urlInput, setUrlInput] = useState('');
+  const [competitorUrlInput, setCompetitorUrlInput] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = await processFiles(e.target.files);
@@ -44,18 +46,39 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     setPastedText('');
   };
 
-  const handleUrlAdd = () => {
-    if (!urlInput.trim()) return;
+  const handleUrlAdd = (isCompetitor: boolean = false) => {
+    const input = isCompetitor ? competitorUrlInput : urlInput;
+    if (!input.trim()) return;
+
     const newFile: UploadedFile = {
       id: crypto.randomUUID(),
-      name: urlInput,
-      content: urlInput, // Content is the URL itself
+      name: isCompetitor ? `[競合] ${input}` : input,
+      content: isCompetitor ? `COMPETITOR_URL: ${input}` : input, // Special prefix for AI to recognize
       source: 'url',
-      size: urlInput.length,
+      size: input.length,
       mimeType: 'text/uri-list'
     };
     onFilesAdded([newFile]);
-    setUrlInput('');
+
+    if (isCompetitor) {
+      setCompetitorUrlInput('');
+    } else {
+      setUrlInput('');
+    }
+  };
+
+  const handleSearchAdd = () => {
+    if (!searchInput.trim()) return;
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      name: `[検索] ${searchInput}`,
+      content: `SEARCH_QUERY: ${searchInput}`, // Special prefix for AI
+      source: 'url', // Treat as URL/Source for now, or add 'search' to types if needed. Using 'url' for icon compatibility.
+      size: searchInput.length,
+      mimeType: 'text/plain'
+    };
+    onFilesAdded([newFile]);
+    setSearchInput('');
   };
 
   // Mock Google Drive Handler
@@ -68,6 +91,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     if (file.mimeType?.startsWith('video/')) return <Video className="w-4 h-4" />;
     if (file.mimeType === 'application/pdf') return <FileType2 className="w-4 h-4" />;
     if (file.source === 'drive') return <Globe className="w-4 h-4" />;
+    if (file.content?.startsWith('SEARCH_QUERY:')) return <Search className="w-4 h-4" />;
     if (file.source === 'url') return <Link className="w-4 h-4" />;
     return <FileText className="w-4 h-4" />;
   };
@@ -79,27 +103,32 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         <div className="flex border-b border-gray-200 bg-gray-50/50 overflow-x-auto">
           <button
             onClick={() => setActiveTab('upload')}
-            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
-              activeTab === 'upload' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${activeTab === 'upload' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             <Upload className="w-4 h-4" />
             ファイル
           </button>
           <button
             onClick={() => setActiveTab('url')}
-            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
-              activeTab === 'url' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${activeTab === 'url' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             <Link className="w-4 h-4" />
             LPのURL
           </button>
           <button
+            onClick={() => setActiveTab('search')}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${activeTab === 'search' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <Search className="w-4 h-4" />
+            検索
+          </button>
+          <button
             onClick={() => setActiveTab('paste')}
-            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
-              activeTab === 'paste' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${activeTab === 'paste' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             <Clipboard className="w-4 h-4" />
             テキスト貼付
@@ -109,7 +138,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         <div className="p-6">
           {activeTab === 'upload' && (
             <div className="space-y-4">
-              <div 
+              <div
                 className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -118,23 +147,23 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                 </div>
                 <h3 className="text-gray-900 font-medium mb-1">クリックして資料をアップロード</h3>
                 <p className="text-gray-500 text-sm mb-4">対応形式: 画像、動画、PDF、テキスト (md, json, csv)</p>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  multiple 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
                   accept="image/*,video/*,.pdf,.txt,.md,.json,.csv"
                   onChange={handleFileChange}
                 />
                 <div className="flex justify-center gap-3">
-                   <button 
+                  <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition-all"
                   >
                     ローカルファイルを選択
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleGoogleDrive(); }}
                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-md shadow-sm flex items-center gap-2 transition-all"
@@ -148,10 +177,11 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           )}
 
           {activeTab === 'url' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Target Product URL */}
               <div>
                 <label htmlFor="url-input" className="block text-sm font-medium text-gray-700 mb-1">
-                  対象のウェブサイトまたはLPのURL
+                  自社製品・サービスのLP URL
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -161,20 +191,80 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="https://example.com/product-lp"
                     className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                    onKeyDown={(e) => e.key === 'Enter' && handleUrlAdd()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUrlAdd(false)}
                   />
                   <button
-                    onClick={handleUrlAdd}
+                    onClick={() => handleUrlAdd(false)}
                     disabled={!urlInput.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                     追加
                   </button>
                 </div>
+              </div>
+
+              {/* Competitor URL */}
+              <div className="pt-4 border-t border-gray-100">
+                <label htmlFor="competitor-url-input" className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">競合</span>
+                  競合他社のLP URL (比較分析用)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="competitor-url-input"
+                    type="url"
+                    value={competitorUrlInput}
+                    onChange={(e) => setCompetitorUrlInput(e.target.value)}
+                    placeholder="https://competitor.com/similar-product"
+                    className="flex-1 p-3 border border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm bg-red-50/30"
+                    onKeyDown={(e) => e.key === 'Enter' && handleUrlAdd(true)}
+                  />
+                  <button
+                    onClick={() => handleUrlAdd(true)}
+                    disabled={!competitorUrlInput.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-4 h-4" />
+                    競合を追加
+                  </button>
+                </div>
                 <p className="mt-2 text-xs text-gray-500">
                   <Zap className="w-3 h-3 inline-block mr-1 text-amber-500" />
-                  GeminiがGoogle検索を使用して、指定されたURLの情報を分析します。
+                  競合URLを追加すると、AIが自社製品との差別化ポイントを自動的に分析します。
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
+                  検索キーワード (市場調査・トレンド分析用)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="search-input"
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="例: 30代 女性 美容液 悩み, 最新 マーケティング トレンド"
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchAdd()}
+                  />
+                  <button
+                    onClick={handleSearchAdd}
+                    disabled={!searchInput.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Search className="w-4 h-4" />
+                    検索追加
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  <Zap className="w-3 h-3 inline-block mr-1 text-amber-500" />
+                  指定したキーワードでGoogle検索を行い、その結果を分析コンテキストに追加します。
                 </p>
               </div>
             </div>
@@ -213,24 +303,25 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             {files.map((file) => (
               <li key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className={`p-2 rounded-md ${
-                    file.source === 'drive' ? 'bg-green-100 text-green-600' : 
+                  <div className={`p-2 rounded-md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
                     file.source === 'url' ? 'bg-purple-100 text-purple-600' :
-                    'bg-blue-100 text-blue-600'
-                  }`}>
+                      'bg-blue-100 text-blue-600'
+                    }`}>
                     {getFileIcon(file)}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                     <p className="text-xs text-gray-500 truncate">
-                      {file.size > 0 ? (file.size / 1024).toFixed(1) + ' KB' : 'リンク'} • 
-                      {file.source === 'paste' ? 'テキスト入力' : 
-                       file.source === 'url' ? 'URL参照' :
-                       'ファイルアップロード'}
+                      {file.size > 0 ? (file.size / 1024).toFixed(1) + ' KB' : 'リンク'} •
+                      {file.source === 'paste' ? 'テキスト入力' :
+                        file.content?.startsWith('SEARCH_QUERY:') ? '検索キーワード' :
+                          file.content?.startsWith('COMPETITOR_URL:') ? '競合URL' :
+                            file.source === 'url' ? 'URL参照' :
+                              'ファイルアップロード'}
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => onFileRemoved(file.id)}
                   className="text-gray-400 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-all"
                   aria-label="Remove file"
@@ -240,9 +331,9 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               </li>
             ))}
           </ul>
-          
+
           <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end">
-             <button
+            <button
               onClick={onAnalyze}
               disabled={isAnalyzing || files.length === 0}
               className="relative inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg shadow-indigo-200 disabled:opacity-60 disabled:shadow-none transition-all w-full sm:w-auto"
