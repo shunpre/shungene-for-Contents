@@ -7,6 +7,7 @@ interface UploadSectionProps {
   files: UploadedFile[];
   onFilesAdded: (newFiles: UploadedFile[]) => void;
   onFileRemoved: (id: string) => void;
+  onFileUpdated?: (id: string, updates: Partial<UploadedFile>) => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
 }
@@ -15,6 +16,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   files,
   onFilesAdded,
   onFileRemoved,
+  onFileUpdated,
   onAnalyze,
   isAnalyzing
 }) => {
@@ -302,15 +304,29 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           <ul className="space-y-3">
             {files.map((file) => (
               <li key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
-                <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center gap-3 overflow-hidden flex-1">
                   <div className={`p-2 rounded-md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
                     file.source === 'url' ? 'bg-purple-100 text-purple-600' :
                       'bg-blue-100 text-blue-600'
                     }`}>
                     {getFileIcon(file)}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                      <select
+                        value={file.assetType || 'analysis_material'}
+                        onChange={(e) => onFileUpdated?.(file.id, { assetType: e.target.value as any })}
+                        className="text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-0.5 pl-1 pr-6 bg-white"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="analysis_material">商品分析資料(デフォルト)</option>
+                        <option value="product">商品画像</option>
+                        <option value="character">キャラクター/モデル</option>
+                        <option value="voice">お客様の声(人物)</option>
+                        <option value="other">その他素材</option>
+                      </select>
+                    </div>
                     <p className="text-xs text-gray-500 truncate">
                       {file.size > 0 ? (file.size / 1024).toFixed(1) + ' KB' : 'リンク'} •
                       {file.source === 'paste' ? 'テキスト入力' :

@@ -79,6 +79,10 @@ const App: React.FC = () => {
     setFiles(prev => prev.filter(f => f.id !== id));
   };
 
+  const handleFileUpdated = (id: string, updates: Partial<UploadedFile>) => {
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+  };
+
   const handleAnalyze = async () => {
     if (files.length === 0) return;
     if (!hasApiKey) {
@@ -355,6 +359,7 @@ const App: React.FC = () => {
                   files={files}
                   onFilesAdded={handleFilesAdded}
                   onFileRemoved={handleFileRemoved}
+                  onFileUpdated={handleFileUpdated}
                   onAnalyze={handleAnalyze}
                   isAnalyzing={appState === AppState.ANALYZING}
                 />

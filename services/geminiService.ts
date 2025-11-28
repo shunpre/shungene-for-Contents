@@ -163,6 +163,7 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     
     **分析のステップ:**
     1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
+       - 特に**「商品分析資料」**として指定されたファイルがある場合は、その内容を最優先で分析の根拠としてください。
     2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
     
     **重要: 情報が取得できない場合の対応**
@@ -503,6 +504,15 @@ export const generateSwipeScreenImage = async (
 ): Promise<string> => {
   if (!screen.designSpec) throw new Error("デザイン指示書がありません。");
 
+  // Filter for image files to use as reference/composition
+  const imageFiles = uploadedFiles.filter(f => f.mimeType?.startsWith('image/'));
+
+  // Categorize images
+  const productImages = imageFiles.filter(f => f.assetType === 'product');
+  const characterImages = imageFiles.filter(f => f.assetType === 'character');
+  const voiceImages = imageFiles.filter(f => f.assetType === 'voice');
+  const otherImages = imageFiles.filter(f => !f.assetType || f.assetType === 'other');
+
   // Create prompt based on design spec and copy
   const prompt = `
     Create a high-quality vertical image (Aspect Ratio 9:16) for a mobile landing page (Magazine/Poster style).
@@ -520,6 +530,34 @@ export const generateSwipeScreenImage = async (
     - Text must be overlayed on the background image.
     - DO NOT create a split screen (top image / bottom text).
     
+    **ASSET COMPOSITION INSTRUCTIONS:**
+    
+    ${productImages.length > 0 ? `
+    [PRODUCT IMAGES PROVIDED]
+    - Use the provided product image(s) as the HERO element.
+    - Composite naturally: Model holding it, placed on a table, or floating in a stylized background.
+    - Ensure the product label/logo is visible if possible.
+    ` : ''}
+
+    ${characterImages.length > 0 ? `
+    [CHARACTER/MODEL IMAGES PROVIDED]
+    - Use the provided character/model image(s) as the main subject.
+    - Maintain their facial features and style.
+    - If a product image is ALSO provided, show this character holding/using the product.
+    ` : ''}
+
+    ${voiceImages.length > 0 && screen.type === 'proof' ? `
+    [USER VOICE IMAGES PROVIDED]
+    - This is a "User Voice" / Testimonial screen.
+    - Use the provided user image as a profile icon or standing figure next to their testimonial.
+    - Make it look authentic and trustworthy.
+    ` : ''}
+
+    ${otherImages.length > 0 ? `
+    [OTHER REFERENCE IMAGES]
+    - Use these images for style reference, background texture, or mood.
+    ` : ''}
+
     **CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
     - **Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
     - The image IS the screen content itself. It should be full-bleed.
@@ -527,6 +565,20 @@ export const generateSwipeScreenImage = async (
   `;
 
   const parts: any[] = [{ text: prompt }];
+
+  // Add image parts if available
+  if (imageFiles.length > 0) {
+    for (const file of imageFiles) {
+      // Remove data URL prefix if present to get raw base64
+      const base64Data = file.content.split(',')[1] || file.content;
+      parts.push({
+        inlineData: {
+          mimeType: file.mimeType || 'image/jpeg',
+          data: base64Data
+        }
+      });
+    }
+  }
 
   try {
     const ai = getAI(apiKey);
