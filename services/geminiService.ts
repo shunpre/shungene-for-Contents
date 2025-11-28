@@ -30,10 +30,10 @@ const SWIPE_SCREEN_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
     order: { type: Type.INTEGER, description: "スライドの順序 (1から開始)" },
-    type: { 
-      type: Type.STRING, 
+    type: {
+      type: Type.STRING,
       enum: ['hook', 'problem', 'empathy', 'solution', 'benefit', 'proof', 'cta'],
-      description: "スライドの役割タイプ" 
+      description: "スライドの役割タイプ"
     },
     title: { type: Type.STRING, description: "スライドのメイン見出し（キャッチコピー）。短くインパクト重視。" },
     mainCopy: { type: Type.STRING, description: "詳細を伝える本文コピー。十分な情報量と説得力が必要。" },
@@ -67,59 +67,54 @@ const SWIPE_LP_SCHEMA: Schema = {
 };
 
 const SWIPE_LP_GUIDELINES = `
-# スワイプ型LP制作ガイドライン（記事LP・雑誌スタイル）
+# スワイプ型LP制作ガイドライン（潜在層向け・体験型ストーリー）
 
-## レイアウトの絶対原則：脱・ブログ調
-1. **上下分割レイアウトの禁止**: 画像が上、文字が下といった安易なブログ記事のようなレイアウトは禁止です。
-2. **1枚絵（フルスクリーン）の徹底**: すべてのスライドは「背景全面にビジュアルがあるポスター形式」で作ってください。文字はその上にオーバーレイ（重ねて）配置します。
-3. **雑誌・ポスターのようなクオリティ**: 視覚的なインパクトを最優先します。
+## コンセプト：脱・読み物、入・体験
+ユーザーは「勉強」しに来たのではなく、「暇つぶし」で見ています。
+「読ませる」のではなく、**「見せて、直感させて、感情を動かす」** ことを最優先してください。
+文字だらけの「記事LP」は禁止です。
 
-## コンテンツ戦略（重要：情報密度と権威性）
-1. **コンテンツの充実 = 視覚情報の密度**: 単に文字を増やすのではなく、「グラフ」「比較表」「No.1バッジ」「権威者の顔写真」「成分図解」などの視覚的なエビデンスを多用してください。
-2. **FV（1枚目）は命**: 1枚目はユーザーが続きを見るかを決めるキービジュアルです。商品画像と強力なキャッチコピーを組み合わせた、圧倒的なクオリティの表紙にしてください。
-3. **教育的価値**: 読者が「へぇ〜」「知らなかった」と思う知識を提供し、信頼を勝ち取ってください。
+## 1. 構成の絶対ルール（潜在層の心を掴む）
+1.  **FV（1枚目）は「商品」ではなく「衝撃」**:
+    *   × 商品画像＋「新発売！」
+    *   ○ **「えっ、私のこと？」と思わせる問いかけ**、または **「知らなかった！」という衝撃の事実**。
+    *   ユーザーの指を止めさせることだけに集中してください。
+2.  **「自分ごと化」ギミックの導入**:
+    *   序盤（2〜4枚目）に必ず **「3秒診断」「チェックリスト」「YES/NOクイズ」** のいずれかを入れてください。
+    *   ユーザーに参加させることで、他人事を自分事に変えます。
+3.  **1スライド＝1メッセージ**:
+    *   1枚のスライドで言いたいことは1つだけ。
+    *   文字数は極限まで減らし、図解・イラスト・写真で語ってください。
 
-## ストーリーテリング
-- **序盤**: 問題提起は「自分ごと化」できる具体的なシーンで。
-- **中盤**: 解決策の提示には、必ず「根拠（Why）」となる図解やデータを添えること。
-- **終盤**: CTAだけでなく、特典や保証などのオファーを明確に視覚化する。
+## 2. デザイン・レイアウト指示
+1.  **フルスクリーン・没入型**:
+    *   スマホの画面全体を使ったポスターのようなレイアウト。
+    *   「画像＋文字」のブログ調ではなく、**「画像の中に文字がある」** デザイン。
+2.  **視覚的エビデンス**:
+    *   「成分がすごい」と書くのではなく、**「成分が浸透している図」** を見せる。
+    *   「人気です」と書くのではなく、**「No.1バッジ」** や **「愛用者の笑顔」** を見せる。
+
+## 3. ストーリー展開（潜在層→顕在層へ）
+*   **序盤（共感・問題提起）**: 「最近、こんなことない？」「実はそれ、〇〇が原因かも」
+*   **中盤（教育・解決策）**: 「放置するとヤバい」「でも、こうすれば解決できる（図解）」
+*   **終盤（商品登場・オファー）**: 「それを1本で叶えるのがこれ」「今なら〇〇」
 `;
 
 const JAPANESE_COPYWRITER_ROLE = `
 # Role & Mindset
-あなたは「日本人の心を動かす、日本語ネイティブの熟練プロコピーライター」です。
-あなたの役割は、英語圏のマーケティング手法（DRM）を直訳したような違和感のある文章ではなく、日本の文化的背景（ハイコンテキスト文化）に根ざした、信頼と共感を生む自然な日本語の文章を書くことです。
+あなたは「日本人の感情を揺さぶる、凄腕のストーリーテラー兼コピーライター」です。
+論理的な説明よりも、**「直感的な納得感」と「感情の動き」** を重視します。
 
-# Core Instruction: "Think in Japanese"
-これからの出力において、以下のプロセスを徹底してください。
-1. 脳内で英語で思考してから日本語に翻訳することを禁止します。
-2. 最初から「日本語の構造」で論理を組み立ててください。
-3. 「翻訳調（バタ臭さ）」を徹底的に排除してください。
+# Core Instruction
+1.  **「先生」にならない**: 上から目線の教育ではなく、**「友人」としての発見の共有**。
+2.  **「感情」に訴える**: 機能（スペック）ではなく、それを使った時の**「高揚感」や「安心感」**を描写する。
+3.  **短く、鋭く**: 長い文章は読まれません。**「見出し」と「ビジュアル」だけで伝わる**ようにする。
 
-# Style Guidelines (禁止・推奨事項)
-
-## 1. 「」カギカッコの厳格な使用制限
-AI特有の「強調のために『』を多用する癖」を完全に排除してください。
-- 【禁止】単なる強調、概念、一般名詞を「」で囲むこと。（例：「成功」を手にする、「集客」の仕組み）
-- 【許可】第三者の発話の引用、書籍名・作品名などの固有名詞。
-- 【原則】強調したい場合は記号に頼らず、語順や助詞（〜こそ、〜は）、前後の文脈で表現してください。
-
-## 2. 英語DRM直訳調（バタ臭さ）の排除
-アメリカのセールスレターに見られるような、過剰な演出や演説調を避けてください。
-- 【禁止表現】
-    - 「想像してみてください」（Imagine...）
-    - 「さあ、あなたの番です」（Now it's your turn.）
-    - 「あなたの人生が劇的に変わります」（Life-changing...）
-    - 「〜への扉を開けましょう」
-    - 過剰な「！」の使用
-- 【推奨トーン】
-    - 読者に寄り添う「noteのエッセイ」や「良質なオウンドメディア」のトーン。
-    - 煽りではなく、事実とロジックによる「静かな説得」。
-    - 「売り込み」ではなく「提案・気づき」のスタンス。
-
-## 3. 日本語としての自然さ（ハイコンテキスト対応）
-- 英語的な「主語（私は、あなたは）」の頻出を避けてください。文脈で分かる場合は主語を省略するのが自然な日本語です。
-- 接続詞（しかし、そして、また）を文頭に置きすぎないようにしてください。
+# 禁止事項
+- 説教くさい長文
+- 専門用語の羅列
+- 英語直訳調の不自然な日本語（「想像してみてください」など）
+- 抽象的な表現（「幸せ」「成功」など具体性のない言葉）
 `;
 
 export const analyzeProductContext = async (files: UploadedFile[]): Promise<ProductProfile> => {
@@ -133,16 +128,17 @@ export const analyzeProductContext = async (files: UploadedFile[]): Promise<Prod
     提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
     URLが提供された場合は、Google検索ツールを使用してそのページの内容を考慮してください。
     
-    あなたのタスクは、これらを分析し、包括的な「製品プロファイル」を作成することです。
-    このプロファイルは、後で「Swipe LP」（モバイルファーストのスワイプ可能なランディングページ）を生成するために使用されます。
+    あなたのタスクは、これらを分析し、**「まだ商品の必要性に気づいていない潜在層」** に響くような切り口を見つけることです。
     
     必ず以下のJSONスキーマ形式のみで出力してください。Markdownのコードブロック( \`\`\`json ... \`\`\` )で囲んでください。
     
     Schema:
     ${JSON.stringify(PRODUCT_PROFILE_SCHEMA, null, 2)}
     
-    マーケティングの重要な柱を効果的に抽出してください。
-    出力は日本語で行ってください。
+    分析のポイント:
+    - 機能そのものより、その機能がもたらす「感情的価値」や「生活の変化」に着目してください。
+    - 潜在層が抱えているであろう「隠れた悩み」や「諦めていること」を言語化してください。
+    - 出力は日本語で行ってください。
   `;
 
   const parts: any[] = [{ text: prompt }];
@@ -150,9 +146,9 @@ export const analyzeProductContext = async (files: UploadedFile[]): Promise<Prod
   // Iterate through files and add them as parts
   for (const file of files) {
     if (file.source === 'url') {
-       parts.push({
-         text: `--- SOURCE URL: ${file.name} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
-       });
+      parts.push({
+        text: `--- SOURCE URL: ${file.name} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
+      });
     } else if (file.data && file.mimeType) {
       parts.push({
         inlineData: {
@@ -190,9 +186,9 @@ export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP>
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
 
-    あなたは売れるスワイプ型LP（ランディングページ）専門のコンテンツクリエイターでもあります。
-    以下の製品プロファイルと、スワイプLPの制作ガイドラインに基づいて、
-    スマートフォンで閲覧した際に最も効果的な「スワイプLP」の構成案（全15〜20枚程度）を作成してください。
+    あなたは「潜在層の心を掴んで離さない」スワイプLPの構成作家です。
+    以下の製品プロファイルと、ガイドラインに基づいて、
+    **「つい最後まで見てしまう」** スワイプLPの構成案（全15〜20枚程度）を作成してください。
 
     --- 製品プロファイル ---
     製品名: ${profile.productName}
@@ -203,14 +199,14 @@ export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP>
     解決策: ${profile.solutions.join(', ')}
     トーン: ${profile.toneOfVoice}
     
-    --- 制作ガイドライン (これを厳守してください) ---
+    --- 制作ガイドライン (厳守) ---
     ${SWIPE_LP_GUIDELINES}
     
-    重要：
-    - 今回のLPは「縦スワイプ（Vertical Swipe）」形式です。TikTokやShortsのように下から上へスワイプする体験を想定してください。
-    - **内容が薄くならないようにしてください。** 各スライドにおいて、ターゲット読者が抱える疑問や不安を完全に払拭できるだけの「十分な情報量」と「説得力のあるコピー」を記述してください。
-    - スライド数は **15枚〜20枚** を目指し、ストーリーを丁寧に展開してください。
-    - **visualDescription** には、単なる写真だけでなく「グラフ」「比較表」「図解」「受賞バッジ」など、視覚的に信頼性を高める要素の作成指示も含めてください。
+    重要指示：
+    1.  **FVのインパクト**: 1枚目は商品紹介ではありません。「えっ？」と思わせる画像やコピーで惹きつけてください。
+    2.  **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
+    3.  **ストーリー性**: 「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」という流れをスムーズに作ってください。いきなり商品を売り込まないでください。
+    4.  **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
@@ -218,8 +214,8 @@ export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP>
     Schema:
     ${JSON.stringify(SWIPE_LP_SCHEMA, null, 2)}
     
-    各スライドの 'title' は短くインパクトのあるものに、
-    'mainCopy' は読みやすく、かつ深い情報を提供するようにしてください。
+    各スライドの 'title' は短く（15文字以内推奨）、直感的に刺さるものにしてください。
+    'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
   `;
 
   try {
@@ -238,21 +234,21 @@ export const generateSwipeLP = async (profile: ProductProfile): Promise<SwipeLP>
     // SANITIZATION: Ensure screens is an array and fields are present
     if (!parsed.screens || !Array.isArray(parsed.screens)) {
       if ((parsed as any).slides && Array.isArray((parsed as any).slides)) {
-          parsed.screens = (parsed as any).slides; // Handle common hallucination
+        parsed.screens = (parsed as any).slides; // Handle common hallucination
       } else {
-          parsed.screens = [];
-          console.error("Gemini returned invalid structure: 'screens' array is missing.", parsed);
+        parsed.screens = [];
+        console.error("Gemini returned invalid structure: 'screens' array is missing.", parsed);
       }
     }
 
     // Default values for screen fields to prevent crashes
     parsed.screens = parsed.screens.map((s, idx) => ({
-        order: s.order || idx + 1,
-        type: s.type || 'benefit',
-        title: s.title || 'タイトル未設定',
-        mainCopy: s.mainCopy || '本文が生成されませんでした。',
-        visualDescription: s.visualDescription || '製品の魅力的な画像',
-        designNote: s.designNote || ''
+      order: s.order || idx + 1,
+      type: s.type || 'benefit',
+      title: s.title || 'タイトル未設定',
+      mainCopy: s.mainCopy || '本文が生成されませんでした。',
+      visualDescription: s.visualDescription || '製品の魅力的な画像',
+      designNote: s.designNote || ''
     }));
 
     return parsed;
@@ -268,7 +264,7 @@ export const generateSingleDesignSpec = async (
   uploadedFiles: UploadedFile[],
   concept: string
 ): Promise<DesignSpec> => {
-  
+
   const fileList = uploadedFiles.map(f => `- ${f.name} (${f.mimeType || 'unknown'})`).join('\n');
   // Provide context about previous screens to ensure consistency, but focus on the target screen
   const contextScreens = allScreens.map(s => `Scene ${s.order}: ${s.title} (${s.type})`).join('\n');
@@ -466,7 +462,7 @@ export const generateSwipeScreenImage = async (
   `;
 
   const parts: any[] = [{ text: prompt }];
-  
+
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
@@ -486,7 +482,7 @@ export const generateSwipeScreenImage = async (
         return part.inlineData.data;
       }
     }
-    
+
     throw new Error("画像データが生成されませんでした。");
 
   } catch (error) {
@@ -506,18 +502,18 @@ function parseJsonResponse<T>(text: string | undefined): T {
   // Find boundaries
   const startIndex = jsonStr.indexOf('{');
   const endIndex = jsonStr.lastIndexOf('}');
-  
+
   if (startIndex === -1 || endIndex === -1) {
-      throw new Error("有効なJSONが見つかりませんでした。");
+    throw new Error("有効なJSONが見つかりませんでした。");
   }
 
   const cleanJson = jsonStr.substring(startIndex, endIndex + 1);
   const parsed = JSON.parse(cleanJson);
-  
+
   // Basic validation: must be an object and not null
   if (parsed === null || typeof parsed !== 'object') {
-     throw new Error("AIが有効なJSONオブジェクトを返しませんでした。");
+    throw new Error("AIが有効なJSONオブジェクトを返しませんでした。");
   }
-  
+
   return parsed as T;
 }
