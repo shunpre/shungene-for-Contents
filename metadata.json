@@ -1,0 +1,5 @@
+{
+  "name": "SwipeLP Creator - Data Ingestion",
+  "description": "Step 1 of the Swipe LP creation process. Upload product documents via local file or text input to train the AI model on your product/service.",
+  "requestFramePermissions": []
+}

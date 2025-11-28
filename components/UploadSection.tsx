@@ -1,0 +1,270 @@
+import React, { useRef, useState } from 'react';
+import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link } from 'lucide-react';
+import { UploadedFile } from '../types';
+import { processFiles } from '../services/fileHelper';
+
+interface UploadSectionProps {
+  files: UploadedFile[];
+  onFilesAdded: (newFiles: UploadedFile[]) => void;
+  onFileRemoved: (id: string) => void;
+  onAnalyze: () => void;
+  isAnalyzing: boolean;
+}
+
+export const UploadSection: React.FC<UploadSectionProps> = ({ 
+  files, 
+  onFilesAdded, 
+  onFileRemoved,
+  onAnalyze,
+  isAnalyzing 
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'url'>('upload');
+  const [pastedText, setPastedText] = useState('');
+  const [urlInput, setUrlInput] = useState('');
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = await processFiles(e.target.files);
+    onFilesAdded(newFiles);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePasteAdd = () => {
+    if (!pastedText.trim()) return;
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      name: `手動入力 ${new Date().toLocaleTimeString()}`,
+      content: pastedText,
+      source: 'paste',
+      size: pastedText.length,
+      mimeType: 'text/plain'
+    };
+    onFilesAdded([newFile]);
+    setPastedText('');
+  };
+
+  const handleUrlAdd = () => {
+    if (!urlInput.trim()) return;
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      name: urlInput,
+      content: urlInput, // Content is the URL itself
+      source: 'url',
+      size: urlInput.length,
+      mimeType: 'text/uri-list'
+    };
+    onFilesAdded([newFile]);
+    setUrlInput('');
+  };
+
+  // Mock Google Drive Handler
+  const handleGoogleDrive = () => {
+    alert("本番環境ではGoogle Picker APIが開きます。このデモでは、ドライブからダウンロードしたファイルをローカルからアップロードしてください。");
+  };
+
+  const getFileIcon = (file: UploadedFile) => {
+    if (file.mimeType?.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (file.mimeType?.startsWith('video/')) return <Video className="w-4 h-4" />;
+    if (file.mimeType === 'application/pdf') return <FileType2 className="w-4 h-4" />;
+    if (file.source === 'drive') return <Globe className="w-4 h-4" />;
+    if (file.source === 'url') return <Link className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 bg-gray-50/50 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === 'upload' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Upload className="w-4 h-4" />
+            ファイル
+          </button>
+          <button
+            onClick={() => setActiveTab('url')}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === 'url' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Link className="w-4 h-4" />
+            LPのURL
+          </button>
+          <button
+            onClick={() => setActiveTab('paste')}
+            className={`flex-1 py-4 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap ${
+              activeTab === 'paste' ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Clipboard className="w-4 h-4" />
+            テキスト貼付
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'upload' && (
+            <div className="space-y-4">
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <h3 className="text-gray-900 font-medium mb-1">クリックして資料をアップロード</h3>
+                <p className="text-gray-500 text-sm mb-4">対応形式: 画像、動画、PDF、テキスト (md, json, csv)</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  multiple 
+                  accept="image/*,video/*,.pdf,.txt,.md,.json,.csv"
+                  onChange={handleFileChange}
+                />
+                <div className="flex justify-center gap-3">
+                   <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition-all"
+                  >
+                    ローカルファイルを選択
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleGoogleDrive(); }}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-md shadow-sm flex items-center gap-2 transition-all"
+                  >
+                    <HardDrive className="w-4 h-4" />
+                    Google ドライブ
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'url' && (
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="url-input" className="block text-sm font-medium text-gray-700 mb-1">
+                  対象のウェブサイトまたはLPのURL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="url-input"
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://example.com/product-lp"
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    onKeyDown={(e) => e.key === 'Enter' && handleUrlAdd()}
+                  />
+                  <button
+                    onClick={handleUrlAdd}
+                    disabled={!urlInput.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-4 h-4" />
+                    追加
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  <Zap className="w-3 h-3 inline-block mr-1 text-amber-500" />
+                  GeminiがGoogle検索を使用して、指定されたURLの情報を分析します。
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'paste' && (
+            <div className="space-y-4">
+              <textarea
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                placeholder="製品の説明、LPのコピー、メールの下書きなどをここに貼り付けてください..."
+                className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none text-sm"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={handlePasteAdd}
+                  disabled={!pastedText.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  ナレッジベースに追加
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* File List */}
+      {files.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+            アップロード済み資料 ({files.length})
+          </h3>
+          <ul className="space-y-3">
+            {files.map((file) => (
+              <li key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className={`p-2 rounded-md ${
+                    file.source === 'drive' ? 'bg-green-100 text-green-600' : 
+                    file.source === 'url' ? 'bg-purple-100 text-purple-600' :
+                    'bg-blue-100 text-blue-600'
+                  }`}>
+                    {getFileIcon(file)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {file.size > 0 ? (file.size / 1024).toFixed(1) + ' KB' : 'リンク'} • 
+                      {file.source === 'paste' ? 'テキスト入力' : 
+                       file.source === 'url' ? 'URL参照' :
+                       'ファイルアップロード'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onFileRemoved(file.id)}
+                  className="text-gray-400 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Remove file"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          
+          <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end">
+             <button
+              onClick={onAnalyze}
+              disabled={isAnalyzing || files.length === 0}
+              className="relative inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg shadow-indigo-200 disabled:opacity-60 disabled:shadow-none transition-all w-full sm:w-auto"
+            >
+              {isAnalyzing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  製品DNAを分析中...
+                </>
+              ) : (
+                <>
+                  AIで製品プロファイルを生成
+                  <Zap className="ml-2 w-4 h-4 fill-current text-yellow-300" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
