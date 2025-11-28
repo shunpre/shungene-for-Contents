@@ -253,7 +253,8 @@ const App: React.FC = () => {
       let updatedScreen: SwipeScreen = {
         ...screen,
         designSpec: newSpec,
-        history: [...currentHistory, historyEntry] // Append history
+        history: [...currentHistory, historyEntry], // Append history
+        redoHistory: [] // Clear redo history on new generation
       };
 
       // Update UI with new spec (image is still old or cleared?) 
@@ -284,11 +285,49 @@ const App: React.FC = () => {
     const lastState = newHistory.pop(); // Remove last state
 
     if (lastState) {
+      // Push current state to redo history
+      const currentEntry: SwipeScreenHistory = {
+        designSpec: screen.designSpec,
+        imageData: screen.imageData,
+        timestamp: Date.now()
+      };
+      const newRedoHistory = [...(screen.redoHistory || []), currentEntry];
+
       const restoredScreen: SwipeScreen = {
         ...screen,
         designSpec: lastState.designSpec,
         imageData: lastState.imageData,
-        history: newHistory
+        history: newHistory,
+        redoHistory: newRedoHistory
+      };
+      handleUpdateScreen(index, restoredScreen);
+    }
+  };
+
+  const handleRedoVisual = (index: number) => {
+    if (!swipeLP || !Array.isArray(swipeLP.screens)) return;
+    const screen = swipeLP.screens[index];
+
+    if (!screen.redoHistory || screen.redoHistory.length === 0) return;
+
+    const newRedoHistory = [...screen.redoHistory];
+    const nextState = newRedoHistory.pop(); // Remove last redo state
+
+    if (nextState) {
+      // Push current state to undo history
+      const currentEntry: SwipeScreenHistory = {
+        designSpec: screen.designSpec,
+        imageData: screen.imageData,
+        timestamp: Date.now()
+      };
+      const newHistory = [...(screen.history || []), currentEntry];
+
+      const restoredScreen: SwipeScreen = {
+        ...screen,
+        designSpec: nextState.designSpec,
+        imageData: nextState.imageData,
+        history: newHistory,
+        redoHistory: newRedoHistory
       };
       handleUpdateScreen(index, restoredScreen);
     }
@@ -434,6 +473,7 @@ const App: React.FC = () => {
                   onRegenerateScreen={handleRegenerateScreen}
                   onRegenerateVisual={handleRegenerateVisual}
                   onUndoVisual={handleUndoVisual}
+                  onRedoVisual={handleRedoVisual}
                 />
               </div>
             )}

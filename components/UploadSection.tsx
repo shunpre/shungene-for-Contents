@@ -309,11 +309,19 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             {files.map((file) => (
               <li key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
                 <div className="flex items-center gap-3 overflow-hidden flex-1">
-                  <div className={`p - 2 rounded - md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
+                  <div className={`p-2 rounded-md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
                     file.source === 'url' ? 'bg-purple-100 text-purple-600' :
                       'bg-blue-100 text-blue-600'
-                    } `}>
-                    {getFileIcon(file)}
+                    } flex items-center justify-center w-12 h-12 overflow-hidden`}>
+                    {file.mimeType?.startsWith('image/') && (file.data || file.content.startsWith('data:')) ? (
+                      <img
+                        src={file.data ? `data:${file.mimeType};base64,${file.data}` : file.content}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getFileIcon(file)
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">

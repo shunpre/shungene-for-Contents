@@ -43,6 +43,7 @@ export interface SwipeScreen {
   designSpec?: DesignSpec; // Populated in the second phase
   imageData?: string; // Base64 encoded final image (Populated in the third phase)
   history?: SwipeScreenHistory[]; // History for undo functionality
+  redoHistory?: SwipeScreenHistory[]; // History for redo functionality
 }
 
 export interface SwipeLP {
