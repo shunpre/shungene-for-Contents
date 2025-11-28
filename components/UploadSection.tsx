@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search } from 'lucide-react';
-import { UploadedFile } from '../types';
+import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search, Sparkles } from 'lucide-react';
+import { UploadedFile, TargetSegment } from '../types';
 import { processFiles } from '../services/fileHelper';
 
 interface UploadSectionProps {
@@ -10,6 +10,8 @@ interface UploadSectionProps {
   onFileUpdated?: (id: string, updates: Partial<UploadedFile>) => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
+  targetSegment: TargetSegment;
+  onTargetSegmentChange: (segment: TargetSegment) => void;
 }
 
 export const UploadSection: React.FC<UploadSectionProps> = ({
@@ -18,7 +20,9 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   onFileRemoved,
   onFileUpdated,
   onAnalyze,
-  isAnalyzing
+  isAnalyzing,
+  targetSegment,
+  onTargetSegmentChange
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'url' | 'search'>('upload');
@@ -38,7 +42,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     if (!pastedText.trim()) return;
     const newFile: UploadedFile = {
       id: crypto.randomUUID(),
-      name: `手動入力 ${new Date().toLocaleTimeString()}`,
+      name: `手動入力 ${new Date().toLocaleTimeString()} `,
       content: pastedText,
       source: 'paste',
       size: pastedText.length,
@@ -54,8 +58,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
 
     const newFile: UploadedFile = {
       id: crypto.randomUUID(),
-      name: isCompetitor ? `[競合] ${input}` : input,
-      content: isCompetitor ? `COMPETITOR_URL: ${input}` : input, // Special prefix for AI to recognize
+      name: isCompetitor ? `[競合] ${input} ` : input,
+      content: isCompetitor ? `COMPETITOR_URL: ${input} ` : input, // Special prefix for AI to recognize
       source: 'url',
       size: input.length,
       mimeType: 'text/uri-list'
@@ -73,8 +77,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     if (!searchInput.trim()) return;
     const newFile: UploadedFile = {
       id: crypto.randomUUID(),
-      name: `[検索] ${searchInput}`,
-      content: `SEARCH_QUERY: ${searchInput}`, // Special prefix for AI
+      name: `[検索] ${searchInput} `,
+      content: `SEARCH_QUERY: ${searchInput} `, // Special prefix for AI
       source: 'url', // Treat as URL/Source for now, or add 'search' to types if needed. Using 'url' for icon compatibility.
       size: searchInput.length,
       mimeType: 'text/plain'
@@ -305,10 +309,10 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             {files.map((file) => (
               <li key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
                 <div className="flex items-center gap-3 overflow-hidden flex-1">
-                  <div className={`p-2 rounded-md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
+                  <div className={`p - 2 rounded - md ${file.source === 'drive' ? 'bg-green-100 text-green-600' :
                     file.source === 'url' ? 'bg-purple-100 text-purple-600' :
                       'bg-blue-100 text-blue-600'
-                    }`}>
+                    } `}>
                     {getFileIcon(file)}
                   </div>
                   <div className="min-w-0 flex-1">

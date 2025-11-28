@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { AnalysisResult } from './components/AnalysisResult';
 import { SwipeLPPreview } from './components/SwipeLPPreview';
-import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec } from './types';
+import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment } from './types';
 import { analyzeProductContext, generateSwipeLP, regenerateSwipeScreen, generateSingleDesignSpec, regenerateDesignSpec, generateSwipeScreenImage } from './services/geminiService';
 import { AlertCircle, Sparkles, Loader2, Key, Layers, PenTool, Image as ImageIcon } from 'lucide-react';
 
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [productProfile, setProductProfile] = useState<ProductProfile | null>(null);
   const [swipeLP, setSwipeLP] = useState<SwipeLP | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [targetSegment, setTargetSegment] = useState<TargetSegment>('latent');
 
   // Visual Phase State (Tracks current screen being processed)
   const [visualProgressIndex, setVisualProgressIndex] = useState<number>(-1);
@@ -97,7 +98,7 @@ const App: React.FC = () => {
     setVisualProgressIndex(-1);
 
     try {
-      const profile = await analyzeProductContext(files, apiKey);
+      const { profile } = await analyzeProductContext(files, apiKey, targetSegment);
       setProductProfile(profile);
       setAppState(AppState.ANALYSIS_COMPLETE);
     } catch (err: any) {
@@ -120,7 +121,7 @@ const App: React.FC = () => {
     setVisualProgressIndex(-1);
 
     try {
-      const lp = await generateSwipeLP(productProfile, apiKey);
+      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment);
       setSwipeLP(lp);
       setAppState(AppState.LP_CREATED);
     } catch (err: any) {
@@ -362,6 +363,8 @@ const App: React.FC = () => {
                   onFileUpdated={handleFileUpdated}
                   onAnalyze={handleAnalyze}
                   isAnalyzing={appState === AppState.ANALYZING}
+                  targetSegment={targetSegment}
+                  onTargetSegmentChange={setTargetSegment}
                 />
 
                 {error && (

@@ -66,6 +66,8 @@ export interface AnalysisResponse {
   summary: string;
 }
 
+export type TargetSegment = 'latent' | 'manifest'; // latent: 潜在層(教育), manifest: 顕在層(指名検索)
+
 // Augment window for AI Studio API Key selection
 declare global {
   interface Window {

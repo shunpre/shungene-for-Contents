@@ -149,18 +149,41 @@ const JAPANESE_COPYWRITER_ROLE = `
 - 抽象的な表現（「幸せ」「成功」など具体性のない言葉）
 `;
 
-export const analyzeProductContext = async (files: UploadedFile[], apiKey: string): Promise<ProductProfile> => {
-  if (files.length === 0) {
-    throw new Error("分析するファイルがありません。");
-  }
+type TargetSegment = 'latent' | 'manifest';
+type AnalysisResponse = {
+  profile: ProductProfile;
+  summary: string;
+  hypothetical?: boolean; // Added for the new prompt logic
+};
+
+export const analyzeProductContext = async (
+  files: UploadedFile[],
+  apiKey: string,
+  targetSegment: TargetSegment = 'latent'
+): Promise<AnalysisResponse> => {
+  const ai = getAI(apiKey);
 
   const prompt = `
     あなたは熟練のマーケティング戦略家であり、コピーライターです。
-    
     提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
     
-    提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
+    **ターゲット層戦略:**
+    あなたは現在、**${targetSegment === 'latent' ? '潜在層 / 準顕在層 (まだニーズに気づいていない顧客)' : '顕在層 (積極的に検索している顧客 / ブランド指名検索者)'}** をターゲットとしています。
     
+    ${targetSegment === 'latent' ? `
+    **潜在層向け戦略:**
+    - 「教育」と「共感」に焦点を当てます。
+    - ユーザーはまだこの製品の必要性を認識していません。
+    - 深層にある「隠れた悩み」や「潜在的なニーズ」を特定します。
+    - 「解決策」は、ユーザーにとっての「発見」として提示されるべきです。
+    ` : `
+    **顕在層向け戦略:**
+    - 「差別化」、「比較」、および「即時的なメリット」に焦点を当てます。
+    - ユーザーはすでに解決策や特定のブランドを探しています。
+    - 競合他社と比較して「なぜこの製品なのか？」（USP）を明確にします。
+    - 「解決策」は直接的で説得力があり、今すぐ購入する強力な理由を提供するものでなければなりません。
+    `}
+
     **分析のステップ:**
     1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
        - 特に**「商品分析資料」**として指定されたファイルがある場合は、その内容を最優先で分析の根拠としてください。
@@ -171,8 +194,9 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     - URLが検索でヒットしない、またはアクセスできない場合でも、**絶対に「不明」「未設定」などの空欄で返さないでください。**
     - その場合は、URLの文字列や一般的な業界知識から推測し、**「もしこの製品が存在するとしたら、どのようなプロファイルが理想的か？」という観点で、架空の（しかし説得力のある）プロファイルを生成してください。**
     - ターゲット層や悩みは、そのカテゴリーにおける一般的なものを適用してください。
+    - 架空のプロファイルを生成した場合は、summaryにその旨を記載してください。
     
-    あなたのタスクは、これらを分析し、**「まだ商品の必要性に気づいていない潜在層」** に響くような切り口を見つけることです。
+    あなたのタスクは、これらを分析し、**「${targetSegment === 'latent' ? 'まだ商品の必要性に気づいていない潜在層' : '比較検討中の顕在層'}」** に響くような切り口を見つけることです。
     
     必ず以下のJSONスキーマ形式のみで出力してください。Markdownのコードブロック( \`\`\`json ... \`\`\` )で囲んでください。
     
@@ -181,7 +205,7 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     
     分析のポイント:
     - 機能そのものより、その機能がもたらす「感情的価値」や「生活の変化」に着目してください。
-    - 潜在層が抱えているであろう「隠れた悩み」や「諦めていること」を言語化してください。
+    - ${targetSegment === 'latent' ? '潜在層が抱えているであろう「隠れた悩み」や「諦めていること」を言語化してください。' : '競合との違いや、今すぐ選ぶべき理由を明確にしてください。'}
     - 出力は日本語で行ってください。
   `;
 
@@ -208,10 +232,9 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
   }
 
   try {
-    const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: { parts: parts },
+      model: 'gemini-2.0-flash-exp', // Updated model
+      contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
       config: {
         temperature: 0.3,
         tools: [{ googleSearch: {} }] // Enable Google Search grounding
@@ -237,7 +260,11 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
     if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
     if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
 
-    return parsed;
+    return {
+      profile: parsed,
+      summary: "分析が完了しました。",
+      hypothetical: false // Default to false, logic for true is complex to detect reliably without explicit flag in JSON
+    };
 
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
@@ -245,13 +272,29 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
   }
 };
 
-export const generateSwipeLP = async (profile: ProductProfile, apiKey: string): Promise<SwipeLP> => {
+export const generateSwipeLP = async (
+  profile: ProductProfile,
+  apiKey: string,
+  targetSegment: TargetSegment = 'latent'
+): Promise<SwipeLP> => {
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
 
-    あなたは「潜在層の心を掴んで離さない」スワイプLPの構成作家です。
+    あなたは**「${targetSegment === 'latent' ? '潜在層 (まだニーズに気づいていない)' : '顕在層 (比較検討中・指名検索)'}」**の心を掴んで離さないスワイプLPの構成作家です。
     以下の製品プロファイルと、ガイドラインに基づいて、
     **「つい最後まで見てしまう」** スワイプLPの構成案（全15〜20枚程度）を作成してください。
+
+    ${targetSegment === 'latent' ? `
+    **【重要】潜在層向けのアプローチ:**
+    - **「売り込み」は厳禁**です。まずは「共感」と「気づき」から入ってください。
+    - 1枚目〜3枚目で「あ、これ私のことだ」と思わせる**自分事化**を徹底してください。
+    - 商品の登場は中盤以降にしてください。まずは「なぜ今のままではダメなのか？」を伝えてください。
+    ` : `
+    **【重要】顕在層向けのアプローチ:**
+    - **「結論（ベネフィット）」**から入ってください。
+    - 1枚目から「この商品が他とどう違うのか」を明確に示してください。
+    - 比較、権威性、実績、オファーなど、**「今すぐ選ぶ理由」**を畳み掛けてください。
+    `}
 
     --- 製品プロファイル ---
     製品名: ${profile.productName}
@@ -261,24 +304,24 @@ export const generateSwipeLP = async (profile: ProductProfile, apiKey: string): 
     悩み: ${profile.painPoints.join(', ')}
     解決策: ${profile.solutions.join(', ')}
     トーン: ${profile.toneOfVoice}
-    
+
     --- 制作ガイドライン (厳守) ---
     ${SWIPE_LP_GUIDELINES}
-    
+
     重要指示：
-    1.  **FVのインパクト**: 1枚目は商品紹介ではありません。「えっ？」と思わせる画像やコピーで惹きつけてください。
-    2.  **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
-    3.  **ストーリー性**: 「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」という流れをスムーズに作ってください。いきなり商品を売り込まないでください。
-    4.  **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。
+    1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット'}で惹きつけてください。
+    2. **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
+    3. **ストーリー性**: ${targetSegment === 'latent' ? '「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」' : '「結論」→「証拠」→「他社比較」→「オファー」'}という流れを意識してください。
+    4. **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
-    
-    Schema:
+
+  Schema:
     ${JSON.stringify(SWIPE_LP_SCHEMA, null, 2)}
     
     各スライドの 'title' は短く（15文字以内推奨）、直感的に刺さるものにしてください。
-    'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
+  'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
   `;
 
   try {
@@ -334,45 +377,45 @@ export const generateSingleDesignSpec = async (
   const contextScreens = allScreens.map(s => `Scene ${s.order}: ${s.title} (${s.type})`).join('\n');
 
   const prompt = `
-    あなたはモバイルLP専門のトップアートディレクターです。
-    現在、以下のコピー構成案（SwipeLP）のうち、「Scene ${targetScreen.order}」の「デザイン指示書」を作成してください。
+  あなたはモバイルLP専門のトップアートディレクターです。
+  現在、以下のコピー構成案（SwipeLP）のうち、「Scene ${targetScreen.order}」の「デザイン指示書」を作成してください。
 
-    --- コンセプト ---
+  --- コンセプト-- -
     ${concept}
 
-    --- 全体の流れ (Context) ---
+  --- 全体の流れ(Context)-- -
     ${contextScreens}
 
-    --- 利用可能なアセット素材 ---
+  --- 利用可能なアセット素材-- -
     ${fileList}
     ※ 画像や動画の素材がここにある場合、積極的にデザイン指示に組み込んでください（ファイル名を指定）。
     ※ 素材がない場合は、具体的な撮影指示や生成AIへのプロンプト指示を書いてください。
 
-    --- ターゲットスライド情報 ---
-    順序: ${targetScreen.order}
-    役割: ${targetScreen.type}
-    タイトル: ${targetScreen.title}
-    本文: ${targetScreen.mainCopy}
-    画像イメージ: ${targetScreen.visualDescription}
+--- ターゲットスライド情報-- -
+  順序: ${targetScreen.order}
+役割: ${targetScreen.type}
+タイトル: ${targetScreen.title}
+本文: ${targetScreen.mainCopy}
+画像イメージ: ${targetScreen.visualDescription}
 
-    --- デザイン要件 (厳守) ---
-    1. **アスペクト比 9:16（縦長全画面）**。
-    2. **フルスクリーン・オーバーレイレイアウト**: 
-       - 「画像が上、文字が下」のブログ調レイアウトは**禁止**です。
-       - 背景全面に高品質な画像を使用し、その上にテキストを配置してください。
-    3. **可読性の確保**:
-       - 背景画像の上に文字を乗せるため、ドロップシャドウ、文字の袋文字、半透明の座布団（テキストボックス）などの処理を具体的に指示してください。
-    4. **視覚情報の密度**:
-       - 可能な限り、図解、矢印、グラフ、No.1バッジ、権威性の証明（メダル等）をビジュアルに組み込んでください。
-    5. **FV（Scene 1）**:
-       - 1枚目はポスターの表紙です。最も力強いキービジュアルとタイトルロゴの配置を指示してください。
+--- デザイン要件(厳守)-- -
+  1. ** アスペクト比 9: 16（縦長全画面）**。
+2. ** フルスクリーン・オーバーレイレイアウト **:
+- 「画像が上、文字が下」のブログ調レイアウトは ** 禁止 ** です。
+- 背景全面に高品質な画像を使用し、その上にテキストを配置してください。
+3. ** 可読性の確保 **:
+- 背景画像の上に文字を乗せるため、ドロップシャドウ、文字の袋文字、半透明の座布団（テキストボックス）などの処理を具体的に指示してください。
+4. ** 視覚情報の密度 **:
+- 可能な限り、図解、矢印、グラフ、No.1バッジ、権威性の証明（メダル等）をビジュアルに組み込んでください。
+5. ** FV（Scene 1）**:
+- 1枚目はポスターの表紙です。最も力強いキービジュアルとタイトルロゴの配置を指示してください。
 
-    --- 出力 ---
-    必ず以下のJSONスキーマに従ってください。
-    
-    Schema:
+--- 出力-- -
+  必ず以下のJSONスキーマに従ってください。
+
+Schema:
     ${JSON.stringify(DESIGN_SPEC_SCHEMA, null, 2)}
-  `;
+`;
 
   try {
     const ai = getAI(apiKey);
@@ -400,33 +443,33 @@ export const regenerateSwipeScreen = async (
 ): Promise<SwipeScreen> => {
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
-    
-    あなたはスワイプ型LPの専門エディターです。
-    特定のスライドに対して、ユーザーから修正指示がありました。
-    
-    --- 製品情報 ---
-    製品名: ${profile.productName}
-    UVP: ${profile.uniqueValueProposition}
-    
-    --- 現在のスライド内容 ---
-    タイトル: ${currentScreen.title}
-    本文: ${currentScreen.mainCopy}
-    画像の指示: ${currentScreen.visualDescription}
-    役割: ${currentScreen.type}
-    
-    --- ユーザーからの修正指示 ---
-    "${instruction}"
-    
-    --- ガイドライン ---
-    - ユーザーの指示に従って、コピーや内容を修正してください。
-    - 内容が薄くならないように、説得力を持たせてください。
-    - スライドの役割（${currentScreen.type}）や順序（${currentScreen.order}）は変更しないでください。
-    - **デザイン指示書(designSpec)は変更せず、そのまま保持するか、コピーの変更に合わせて微調整してください。**
-    - 出力は必ず以下のJSONスキーマに従ってください。
-    
-    Schema:
+
+あなたはスワイプ型LPの専門エディターです。
+特定のスライドに対して、ユーザーから修正指示がありました。
+
+--- 製品情報-- -
+  製品名: ${profile.productName}
+UVP: ${profile.uniqueValueProposition}
+
+--- 現在のスライド内容-- -
+  タイトル: ${currentScreen.title}
+本文: ${currentScreen.mainCopy}
+画像の指示: ${currentScreen.visualDescription}
+役割: ${currentScreen.type}
+
+--- ユーザーからの修正指示-- -
+  "${instruction}"
+
+--- ガイドライン-- -
+  - ユーザーの指示に従って、コピーや内容を修正してください。
+- 内容が薄くならないように、説得力を持たせてください。
+- スライドの役割（${currentScreen.type}）や順序（${currentScreen.order}）は変更しないでください。
+    - ** デザイン指示書(designSpec)は変更せず、そのまま保持するか、コピーの変更に合わせて微調整してください。**
+  - 出力は必ず以下のJSONスキーマに従ってください。
+
+Schema:
     ${JSON.stringify(SWIPE_SCREEN_SCHEMA, null, 2)}
-  `;
+`;
 
   try {
     const ai = getAI(apiKey);
@@ -451,35 +494,35 @@ export const regenerateDesignSpec = async (
   instruction: string,
   apiKey: string
 ): Promise<DesignSpec> => {
-  const fileList = uploadedFiles.map(f => `- ${f.name}`).join('\n');
+  const fileList = uploadedFiles.map(f => `- ${f.name} `).join('\n');
 
   const prompt = `
-    あなたはモバイルLP専門のアートディレクターです。
-    特定のスライドの「デザイン指示書」に対して、ユーザーから修正指示がありました。
-    コピーの内容は変更せず、デザインの指定のみを修正してください。
+あなたはモバイルLP専門のアートディレクターです。
+特定のスライドの「デザイン指示書」に対して、ユーザーから修正指示がありました。
+コピーの内容は変更せず、デザインの指定のみを修正してください。
 
-    --- 現在のコピー情報 ---
-    タイトル: ${currentScreen.title}
-    本文: ${currentScreen.mainCopy}
+--- 現在のコピー情報-- -
+  タイトル: ${currentScreen.title}
+本文: ${currentScreen.mainCopy}
 
-    --- 現在のデザイン指示 ---
-    ${JSON.stringify(currentScreen.designSpec || {}, null, 2)}
+--- 現在のデザイン指示-- -
+  ${JSON.stringify(currentScreen.designSpec || {}, null, 2)}
 
-    --- 利用可能なアセット ---
-    ${fileList}
+--- 利用可能なアセット-- -
+  ${fileList}
 
-    --- ユーザーからの修正指示 ---
-    "${instruction}"
+--- ユーザーからの修正指示-- -
+  "${instruction}"
 
-    --- ガイドライン ---
-    - アスペクト比9:16、縦スワイプLPであることを忘れないでください。
-    - **上下分割レイアウトは禁止です。必ずフルスクリーン画像＋テキストオーバーレイにしてください。**
-    - 静止画デザインとして出力してください。
-    - 出力は必ず以下のJSONスキーマに従ってください。
+--- ガイドライン-- -
+  - アスペクト比9: 16、縦スワイプLPであることを忘れないでください。
+    - ** 上下分割レイアウトは禁止です。必ずフルスクリーン画像＋テキストオーバーレイにしてください。**
+  - 静止画デザインとして出力してください。
+- 出力は必ず以下のJSONスキーマに従ってください。
 
-    Schema:
+Schema:
     ${JSON.stringify(DESIGN_SPEC_SCHEMA, null, 2)}
-  `;
+`;
 
   try {
     const ai = getAI(apiKey);
@@ -517,36 +560,38 @@ export const generateSwipeScreenImage = async (
 
   // Create prompt based on design spec and copy
   const prompt = `
-    Create a high-quality vertical image (Aspect Ratio 9:16) for a mobile landing page (Magazine/Poster style).
+    Create a high - quality vertical image(Aspect Ratio 9: 16) for a mobile landing page(Magazine / Poster style).
     
-    Headline Text to Render (Big, Impactful): "${screen.title}"
-    Body Text to Render (Readable): "${screen.mainCopy}"
+    Headline Text to Render(Big, Impactful): "${screen.title}"
+    Body Text to Render(Readable): "${screen.mainCopy}"
     
     Visual Style:
     ${screen.designSpec.visualAssetInstruction}
     ${screen.designSpec.colorPalette}
     
-    Layout Instructions (MUST FOLLOW):
+    Layout Instructions(MUST FOLLOW):
     ${screen.designSpec.layoutBlueprint}
-    - The design MUST be FULL SCREEN (wallpaper style).
+- The design MUST be FULL SCREEN(wallpaper style).
     - Text must be overlayed on the background image.
-    - DO NOT create a split screen (top image / bottom text).
+    - DO NOT create a split screen(top image / bottom text).
     
-    **ASSET COMPOSITION INSTRUCTIONS:**
-    
-    ${productImages.length > 0 ? `
+    ** ASSET COMPOSITION INSTRUCTIONS:**
+
+  ${productImages.length > 0 ? `
     [PRODUCT IMAGES PROVIDED]
     - Use the provided product image(s) as the HERO element.
     - Composite naturally: Model holding it, placed on a table, or floating in a stylized background.
     - Ensure the product label/logo is visible if possible.
-    ` : ''}
+    ` : ''
+    }
 
     ${characterImages.length > 0 ? `
     [CHARACTER/MODEL IMAGES PROVIDED]
     - Use the provided character/model image(s) as the main subject.
     - Maintain their facial features and style.
     - If a product image is ALSO provided, show this character holding/using the product.
-    ` : ''}
+    ` : ''
+    }
 
     ${designRefImages.length > 0 ? `
     [DESIGN REFERENCE IMAGES PROVIDED]
@@ -554,24 +599,27 @@ export const generateSwipeScreenImage = async (
     - **DO NOT COPY THE CONTENT:** Do not reproduce the specific objects, people, or layout of the reference exactly.
     - **ADAPT TO PRODUCT:** Apply this style to the USER'S PRODUCT and content defined above.
     - If the reference shows a car but the user's product is a cosmetic, render a cosmetic with the *lighting/mood* of the car ad.
-    ` : ''}
+    ` : ''
+    }
 
     ${voiceImages.length > 0 && screen.type === 'proof' ? `
     [USER VOICE IMAGES PROVIDED]
     - This is a "User Voice" / Testimonial screen.
     - Use the provided user image as a profile icon or standing figure next to their testimonial.
     - Make it look authentic and trustworthy.
-    ` : ''}
+    ` : ''
+    }
 
     ${otherImages.length > 0 ? `
     [OTHER REFERENCE IMAGES]
     - Use these images for style reference, background texture, or mood.
-    ` : ''}
+    ` : ''
+    }
 
-    **CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
-    - **Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
-    - The image IS the screen content itself. It should be full-bleed.
-    - Do not produce low-density "blog" graphics. Make it look like a high-end magazine ad or infographic.
+    ** CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
+    - ** Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
+  - The image IS the screen content itself.It should be full - bleed.
+    - Do not produce low - density "blog" graphics.Make it look like a high - end magazine ad or infographic.
   `;
 
   const parts: any[] = [{ text: prompt }];
@@ -623,7 +671,7 @@ function parseJsonResponse<T>(text: string | undefined): T {
   if (!text) throw new Error("AIからの応答が空でした。");
 
   // Extract JSON from markdown code block
-  const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```([\s\S]*?)```/) || [null, text];
+  const jsonMatch = text.match(/```json\n([\s\S] *?) \n```/) || text.match(/```([\s\S] *?)```/) || [null, text];
   const jsonStr = jsonMatch[1] ? jsonMatch[1].trim() : text.trim();
 
   // Find boundaries
