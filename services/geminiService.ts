@@ -627,8 +627,14 @@ export const generateSwipeScreenImage = async (
   // Add image parts if available
   if (imageFiles.length > 0) {
     for (const file of imageFiles) {
-      // Remove data URL prefix if present to get raw base64
-      const base64Data = file.content.split(',')[1] || file.content;
+      // Use file.data (raw base64) if available (from fileHelper), otherwise try to parse from content (data URL)
+      let base64Data = '';
+      if (file.data) {
+        base64Data = file.data;
+      } else {
+        base64Data = file.content.split(',')[1] || file.content;
+      }
+
       parts.push({
         inlineData: {
           mimeType: file.mimeType || 'image/jpeg',
