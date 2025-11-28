@@ -198,7 +198,7 @@ export const analyzeProductContext = async (files: UploadedFile[], apiKey: strin
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.0-pro',
       contents: { parts: parts },
       config: {
         temperature: 0.3,
@@ -253,7 +253,7 @@ export const generateSwipeLP = async (profile: ProductProfile, apiKey: string): 
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.0-pro',
       contents: prompt,
       config: {
         temperature: 0.7,
@@ -346,7 +346,7 @@ export const generateSingleDesignSpec = async (
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp', // Strong reasoning for design layout
+      model: 'gemini-3.0-pro', // Strong reasoning for design layout
       contents: prompt,
       config: {
         temperature: 0.5,
@@ -400,7 +400,7 @@ export const regenerateSwipeScreen = async (
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.0-pro',
       contents: prompt,
       config: {
         temperature: 0.7,
@@ -453,7 +453,7 @@ export const regenerateDesignSpec = async (
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.0-pro',
       contents: prompt,
       config: {
         temperature: 0.7,
@@ -502,7 +502,7 @@ export const generateSwipeScreenImage = async (
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'nano-bananapro',
       contents: { parts: parts },
       config: {
         // imageConfig: {
