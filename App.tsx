@@ -35,7 +35,12 @@ const App: React.FC = () => {
       const hasKey = await window.aistudio.hasSelectedApiKey();
       setHasApiKey(hasKey);
     }
-    // 2. Check Local Storage
+    // 2. Check Environment Variable (injected by Vite)
+    else if (process.env.GEMINI_API_KEY) {
+      setApiKey(process.env.GEMINI_API_KEY);
+      setHasApiKey(true);
+    }
+    // 3. Check Local Storage
     else {
       const storedKey = localStorage.getItem('gemini_api_key');
       if (storedKey) {
