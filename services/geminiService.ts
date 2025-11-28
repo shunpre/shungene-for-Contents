@@ -550,9 +550,10 @@ export const generateSwipeScreenImage = async (
 
     ${designRefImages.length > 0 ? `
     [DESIGN REFERENCE IMAGES PROVIDED]
-    - **STYLE TRANSFER:** Use these images as a strict reference for the visual style, color grading, and mood.
-    - Mimic the lighting, composition, and "vibe" of these references.
-    - Do NOT copy the content, but copy the *style*.
+    - **STYLE REFERENCE ONLY:** Use these images ONLY for visual style (color palette, lighting, mood, font vibe).
+    - **DO NOT COPY THE CONTENT:** Do not reproduce the specific objects, people, or layout of the reference exactly.
+    - **ADAPT TO PRODUCT:** Apply this style to the USER'S PRODUCT and content defined above.
+    - If the reference shows a car but the user's product is a cosmetic, render a cosmetic with the *lighting/mood* of the car ad.
     ` : ''}
 
     ${voiceImages.length > 0 && screen.type === 'proof' ? `
