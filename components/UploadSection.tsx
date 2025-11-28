@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search, Sparkles } from 'lucide-react';
+import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search, Sparkles, Camera } from 'lucide-react';
 import { UploadedFile, TargetSegment } from '../types';
 import { processFiles } from '../services/fileHelper';
 
@@ -93,7 +93,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   };
 
   const getFileIcon = (file: UploadedFile) => {
-    if (file.mimeType?.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (file.mimeType?.startsWith('image/')) return <Camera className="w-4 h-4" />;
     if (file.mimeType?.startsWith('video/')) return <Video className="w-4 h-4" />;
     if (file.mimeType === 'application/pdf') return <FileType2 className="w-4 h-4" />;
     if (file.source === 'drive') return <Globe className="w-4 h-4" />;
@@ -353,27 +353,67 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             ))}
           </ul>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end">
-            <button
-              onClick={onAnalyze}
-              disabled={isAnalyzing || files.length === 0}
-              className="relative inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg shadow-indigo-200 disabled:opacity-60 disabled:shadow-none transition-all w-full sm:w-auto"
-            >
-              {isAnalyzing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  製品DNAを分析中...
-                </>
-              ) : (
-                <>
-                  AIで製品プロファイルを生成
-                  <Zap className="ml-2 w-4 h-4 fill-current text-yellow-300" />
-                </>
-              )}
-            </button>
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                ターゲット層の選択
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => onTargetSegmentChange('latent')}
+                  className={`p-3 rounded-lg border text-left transition-all ${targetSegment === 'latent'
+                    ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                  <div className={`text-sm font-medium ${targetSegment === 'latent' ? 'text-indigo-700' : 'text-gray-900'}`}>
+                    潜在層向け (教育)
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    「なぜ必要なのか？」から啓蒙し、興味喚起・信頼構築を行うコンテンツ
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => onTargetSegmentChange('manifest')}
+                  className={`p-3 rounded-lg border text-left transition-all ${targetSegment === 'manifest'
+                    ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                  <div className={`text-sm font-medium ${targetSegment === 'manifest' ? 'text-indigo-700' : 'text-gray-900'}`}>
+                    顕在層向け (指名検索)
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    「なぜこの商品なのか？」を訴求し、他社比較・オファーでCVを狙うコンテンツ
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={onAnalyze}
+                disabled={isAnalyzing || files.length === 0}
+                className="relative inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg shadow-indigo-200 disabled:opacity-60 disabled:shadow-none transition-all w-full sm:w-auto"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    製品DNAを分析中...
+                  </>
+                ) : (
+                  <>
+                    AIで製品プロファイルを生成
+                    <Zap className="ml-2 w-4 h-4 fill-current text-yellow-300" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
