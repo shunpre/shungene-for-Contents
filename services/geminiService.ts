@@ -130,6 +130,19 @@ const SWIPE_LP_GUIDELINES = `
 *   **序盤（共感・問題提起）**: 「最近、こんなことない？」「実はそれ、〇〇が原因かも」
 *   **中盤（教育・解決策）**: 「放置するとヤバい」「でも、こうすれば解決できる（図解）」
 *   **終盤（商品登場・オファー）**: 「それを1本で叶えるのがこれ」「今なら〇〇」
+
+## 4. 【重要】コピーライティングの厳格なルール（AI制御用）
+1.  **文末の「。」（句点）は完全禁止**:
+    *   改行時も文末も、「。」は一切不要です。
+    *   × 「これは革命です。」
+    *   ○ 「これは革命です」
+2.  **改行時の「、」（読点）は禁止**:
+    *   行の途中の「、」はOKですが、行末の「、」は削除してください。
+    *   × 「しかし、\nそれは間違いです」
+    *   ○ 「しかし\nそれは間違いです」
+3.  **【】（隅付き括弧）の使用制限**:
+    *   **ボタン内の文言**（例：【詳細を見る】）や、**ボタン周りのマイクロコピー**（例：【初回限定】）以外では使用禁止です。
+    *   見出しや強調で【】を使わないでください。
 `;
 
 const JAPANESE_COPYWRITER_ROLE = `
@@ -482,7 +495,14 @@ Schema:
       }
     }));
 
-    return parseJsonResponse<SwipeScreen>(response.text);
+    const parsed = parseJsonResponse<SwipeScreen>(response.text);
+
+    // Apply strict copy sanitization
+    return {
+      ...parsed,
+      title: sanitizeCopy(parsed.title),
+      mainCopy: sanitizeCopy(parsed.mainCopy)
+    };
   } catch (error) {
     console.error("Gemini Regenerate Screen Error:", error);
     throw error;
@@ -698,4 +718,22 @@ function parseJsonResponse<T>(text: string | undefined): T {
   }
 
   return parsed as T;
+}
+
+/**
+ * Enforce strict copy rules:
+ * 1. Remove trailing periods (。) at end of string or line.
+ * 2. Remove trailing commas (、) at end of string or line.
+ */
+function sanitizeCopy(text: string): string {
+  if (!text) return text;
+
+  // Remove 。 at end of lines or string
+  let sanitized = text.replace(/。(?=$|\n)/g, '');
+
+  // Remove 、 at end of lines or string
+  sanitized = sanitized.replace(/、(?=$|\n)/g, '');
+
+  return sanitized;
+}
 }
