@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { AnalysisResult } from './components/AnalysisResult';
 import { SwipeLPPreview } from './components/SwipeLPPreview';
-import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment } from './types';
+import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment, SwipeScreenHistory } from './types';
 import { analyzeProductContext, generateSwipeLP, regenerateSwipeScreen, generateSingleDesignSpec, regenerateDesignSpec, generateSwipeScreenImage } from './services/geminiService';
 import { AlertCircle, Sparkles, Loader2, Key, Layers, PenTool, Image as ImageIcon } from 'lucide-react';
 
@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [swipeLP, setSwipeLP] = useState<SwipeLP | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [targetSegment, setTargetSegment] = useState<TargetSegment>('latent');
+  const [isMangaMode, setIsMangaMode] = useState<boolean>(false);
 
   // Visual Phase State (Tracks current screen being processed)
   const [visualProgressIndex, setVisualProgressIndex] = useState<number>(-1);
@@ -126,7 +127,7 @@ const App: React.FC = () => {
     setVisualProgressIndex(-1);
 
     try {
-      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment);
+      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment, isMangaMode);
       setSwipeLP(lp);
       setAppState(AppState.LP_CREATED);
     } catch (err: any) {
@@ -183,7 +184,7 @@ const App: React.FC = () => {
 
         // 2. Image Generation
         if (!currentScreens[i].imageData && currentScreens[i].designSpec) {
-          const base64Image = await generateSwipeScreenImage(currentScreens[i], files, apiKey);
+          const base64Image = await generateSwipeScreenImage(currentScreens[i], files, apiKey, isMangaMode);
           currentScreens[i] = { ...currentScreens[i], imageData: base64Image };
 
           // Update state immediately
@@ -268,7 +269,7 @@ const App: React.FC = () => {
       handleUpdateScreen(index, updatedScreen);
 
       // 2. Regenerate Image immediately
-      const base64Image = await generateSwipeScreenImage(updatedScreen, files, apiKey);
+      const base64Image = await generateSwipeScreenImage(updatedScreen, files, apiKey, isMangaMode);
       updatedScreen = { ...updatedScreen, imageData: base64Image };
       handleUpdateScreen(index, updatedScreen);
 
@@ -409,6 +410,8 @@ const App: React.FC = () => {
                   isAnalyzing={appState === AppState.ANALYZING}
                   targetSegment={targetSegment}
                   onTargetSegmentChange={setTargetSegment}
+                  isMangaMode={isMangaMode}
+                  onMangaModeChange={setIsMangaMode}
                 />
 
                 {error && (

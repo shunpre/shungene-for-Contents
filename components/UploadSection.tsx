@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search, Sparkles, Camera } from 'lucide-react';
+import { Upload, FileText, HardDrive, Plus, X, Globe, Clipboard, Zap, Image, Video, FileType2, Link, Search, Sparkles, Camera, BookOpen } from 'lucide-react';
 import { UploadedFile, TargetSegment } from '../types';
 import { processFiles } from '../services/fileHelper';
 
@@ -12,6 +12,8 @@ interface UploadSectionProps {
   isAnalyzing: boolean;
   targetSegment: TargetSegment;
   onTargetSegmentChange: (segment: TargetSegment) => void;
+  isMangaMode: boolean;
+  onMangaModeChange: (isManga: boolean) => void;
 }
 
 export const UploadSection: React.FC<UploadSectionProps> = ({
@@ -22,7 +24,9 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   onAnalyze,
   isAnalyzing,
   targetSegment,
-  onTargetSegmentChange
+  onTargetSegmentChange,
+  isMangaMode,
+  onMangaModeChange
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'url' | 'search'>('upload');

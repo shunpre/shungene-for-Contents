@@ -288,15 +288,24 @@ export const analyzeProductContext = async (
 export const generateSwipeLP = async (
   profile: ProductProfile,
   apiKey: string,
-  targetSegment: TargetSegment = 'latent'
+  targetSegment: TargetSegment = 'latent',
+  isMangaMode: boolean = false
 ): Promise<SwipeLP> => {
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
 
-    あなたは**「${targetSegment === 'latent' ? '潜在層 (まだニーズに気づいていない)' : '顕在層 (比較検討中・指名検索)'}」**の心を掴んで離さないスワイプLPの構成作家です。
+    あなたは${isMangaMode ? '**「Webtoon（縦読みマンガ）の原作脚本家」**' : `**「${targetSegment === 'latent' ? '潜在層 (まだニーズに気づいていない)' : '顕在層 (比較検討中・指名検索)'}」**の心を掴んで離さないスワイプLPの構成作家`}です。
     以下の製品プロファイルと、ガイドラインに基づいて、
-    **「つい最後まで見てしまう」** スワイプLPの構成案（全8〜20枚程度で、最適な枚数）を作成してください。
+    ${isMangaMode ? '**「読者が主人公に感情移入してしまう」** マンガ風スワイプLPの構成案（全8〜20枚程度）' : '**「つい最後まで見てしまう」** スワイプLPの構成案（全8〜20枚程度で、最適な枚数）'}を作成してください。
 
+    ${isMangaMode ? `
+    **【重要】マンガモードの特別指示:**
+    - **形式**: 各スライドは**「4コマ漫画（または4分割のコマ割り）」**として構成してください。
+    - **構成**: 1ページ（1スライド）の中に「起・承・転・結」や「状況・展開・オチ・引き」の4つの展開を入れてください。
+    - **mainCopy**: ここには4コマ全体のセリフをまとめて書いてください（例：「コマ1：〇〇\nコマ2：〇〇...」）。
+    - **visualDescription**: 「4コマ漫画のレイアウト。1コマ目は...、2コマ目は...」と、4つのコマの内容を具体的に指示してください。
+    - **枚数**: 全3〜5枚（合計12〜20コマ）で完結させてください。
+    ` : `
     ${targetSegment === 'latent' ? `
     **【重要】潜在層向けのアプローチ:**
     - **「売り込み」は厳禁**です。まずは「共感」と「気づき」から入ってください。
@@ -308,6 +317,7 @@ export const generateSwipeLP = async (
     - **1枚目に必ず「商品名」と「オファー（キャンペーンや特典）」を明記してください。**
     - 1枚目から「この商品が他とどう違うのか」を明確に示してください。
     - 比較、権威性、実績、オファーなど、**「今すぐ選ぶ理由」**を畳み掛けてください。
+    `}
     `}
 
     --- 製品プロファイル ---
@@ -564,13 +574,18 @@ Schema:
 
 export const generateSwipeScreenImage = async (
   screen: SwipeScreen,
-  uploadedFiles: UploadedFile[],
-  apiKey: string
+  files: UploadedFile[],
+  apiKey: string,
+  isMangaMode: boolean = false
 ): Promise<string> => {
-  if (!screen.designSpec) throw new Error("デザイン指示書がありません。");
+  const ai = getAI(apiKey);
+
+  // Construct prompt based on design spec
+  const spec = screen.designSpec;
+  if (!spec) throw new Error("Design Spec is missing");
 
   // Filter for image files to use as reference/composition
-  const imageFiles = uploadedFiles.filter(f => f.mimeType?.startsWith('image/'));
+  const imageFiles = files.filter(f => f.mimeType?.startsWith('image/'));
 
   // Categorize images
   const productImages = imageFiles.filter(f => f.assetType === 'product');
@@ -579,26 +594,40 @@ export const generateSwipeScreenImage = async (
   const designRefImages = imageFiles.filter(f => f.assetType === 'design_reference');
   const otherImages = imageFiles.filter(f => !f.assetType || f.assetType === 'other');
 
-  // Create prompt based on design spec and copy
   const prompt = `
-    Create a high - quality vertical image(Aspect Ratio 9: 16) for a mobile landing page(Magazine / Poster style).
+    Create a high-quality vertical image (9:16 aspect ratio) for a mobile landing page.
     
-    Headline Text to Render(Big, Impactful): "${screen.title}"
-    Body Text to Render(Readable): "${screen.mainCopy}"
-    
-    Visual Style:
-    ${screen.designSpec.visualAssetInstruction}
-    ${screen.designSpec.colorPalette}
-    
-    Layout Instructions(MUST FOLLOW):
-    ${screen.designSpec.layoutBlueprint}
-- The design MUST be FULL SCREEN(wallpaper style).
-    - Text must be overlayed on the background image.
-    - DO NOT create a split screen(top image / bottom text).
-    
-    ** ASSET COMPOSITION INSTRUCTIONS:**
+    ${isMangaMode ? `
+    **STYLE: 4-PANEL MANGA / COMIC STRIP (Japanese Style)**
+    - **LAYOUT**: The image MUST be divided into 4 distinct panels (2x2 grid or 4 vertical stacked panels).
+    - **CONTENT**: Create a sequence of 4 scenes as described in the Visual Description.
+    - **STYLE**: High-quality anime/manga art style.
+    - **NO TEXT**: Do not include speech bubbles or text inside the panels.
+    - **BORDERS**: Clear black or white borders between panels.
+    ` : `
+    **STYLE: Professional Mobile App / Landing Page Design**
+    - Modern, clean, and high-impact visual.
+    - If the description asks for a photo, make it realistic and high-resolution.
+    - If the description asks for an illustration, make it flat, modern, and corporate-friendly.
+    `}
 
-  ${productImages.length > 0 ? `
+    **Visual Description:**
+    ${screen.visualDescription}
+
+    **Design Layout:**
+    ${spec.layoutBlueprint}
+
+    **Color Palette:**
+    ${spec.colorPalette}
+
+    **Important:**
+    - Aspect Ratio: 9:16 (Vertical)
+    - **NO TEXT**: Do not render any text inside the image. The text will be overlaid by code.
+    - High quality, sharp details.
+
+    **ASSET COMPOSITION INSTRUCTIONS:**
+
+    ${productImages.length > 0 ? `
     [PRODUCT IMAGES PROVIDED]
     - Use the provided product image(s) as the HERO element.
     - Composite naturally: Model holding it, placed on a table, or floating in a stylized background.
@@ -619,7 +648,6 @@ export const generateSwipeScreenImage = async (
     - **STYLE REFERENCE ONLY:** Use these images ONLY for visual style (color palette, lighting, mood, font vibe).
     - **DO NOT COPY THE CONTENT:** Do not reproduce the specific objects, people, or layout of the reference exactly.
     - **ADAPT TO PRODUCT:** Apply this style to the USER'S PRODUCT and content defined above.
-    - If the reference shows a car but the user's product is a cosmetic, render a cosmetic with the *lighting/mood* of the car ad.
     ` : ''
     }
 
@@ -627,20 +655,13 @@ export const generateSwipeScreenImage = async (
     [USER VOICE IMAGES PROVIDED]
     - This is a "User Voice" / Testimonial screen.
     - Use the provided user image as a profile icon or standing figure next to their testimonial.
-    - Make it look authentic and trustworthy.
     ` : ''
     }
 
-    ${otherImages.length > 0 ? `
-    [OTHER REFERENCE IMAGES]
-    - Use these images for style reference, background texture, or mood.
-    ` : ''
-    }
-
-    ** CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
-    - ** Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
-  - The image IS the screen content itself.It should be full - bleed.
-    - Do not produce low - density "blog" graphics.Make it look like a high - end magazine ad or infographic.
+    **CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
+    - **Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
+    - The image IS the screen content itself. It should be full-bleed.
+    - Do not produce low-density "blog" graphics. Make it look like a high-end magazine ad or infographic.
   `;
 
   const parts: any[] = [{ text: prompt }];
