@@ -304,6 +304,7 @@ export const generateSwipeLP = async (
     - **前半（1〜3枚目）**: **「visualStyle: 'manga'」**を指定してください。読者の悩みや共感を呼ぶストーリーを「4コマ漫画」形式で描いてください。
     - **後半（4〜5枚目）**: **「visualStyle: 'standard'」**を指定してください。解決策としての「商品」を魅力的に見せる、通常のLPデザインに切り替えてください。
     - **mainCopy**: マンガ部分は「セリフ」、セールス部分は「キャッチコピー」にしてください。
+    - **visualDescription**: セリフの内容（悲しみ、喜び、驚き）が**「表情」や「行動」**として視覚的に伝わるように、コマごとの描写を詳細に書いてください。
     - **枚数**: 全4〜6枚程度で、マンガからセールスへ自然につなげてください。
     ` : `
     ${targetSegment === 'latent' ? `
@@ -336,7 +337,7 @@ export const generateSwipeLP = async (
     1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット（商品名・オファー必須）'}で惹きつけてください。
     2. **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
     3. **ストーリー性**: ${targetSegment === 'latent' ? '「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」' : '「結論」→「証拠」→「他社比較」→「オファー」'}という流れを意識してください。
-    4. **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。
+    4. **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。**特に、mainCopyの内容（感情、状況、数値）を視覚的に補完・強調する描写にしてください。**
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
@@ -597,8 +598,25 @@ export const generateSwipeScreenImage = async (
   const isMangaStyle = screen.visualStyle === 'manga' || (!screen.visualStyle && isMangaMode);
 
   const prompt = `
-    Create a high-quality vertical image (9:16 aspect ratio) for a mobile landing page.
-    
+    **CRITICAL INSTRUCTION: STRICTLY FOLLOW THE DESIGN SPEC AND LAYOUT BLUEPRINT.**
+    You are a high-end UI/UX designer and illustrator. Your goal is to generate a final production-quality image that matches the design specification exactly.
+
+    **Design Layout (BLUEPRINT):**
+    ${spec.layoutBlueprint}
+    *Render the image EXACTLY according to this layout.*
+
+    **Visual Description (CONTENT):**
+    ${screen.visualDescription}
+    *Ensure the visual content matches this description and the context of the copy.*
+
+    **Context (COPY):**
+    Title: ${screen.title}
+    Main Copy: ${screen.mainCopy}
+    *The image must support this message. If the copy mentions a specific emotion, object, or situation, it MUST be present in the image.*
+
+    **Color Palette:**
+    ${spec.colorPalette}
+
     ${isMangaStyle ? `
     **STYLE: 4-PANEL VERTICAL MANGA (Webtoon Style)**
     - **LAYOUT**: The image MUST be divided into **4 VERTICAL PANELS STACKED (1 Column, 4 Rows)**.
@@ -611,20 +629,12 @@ export const generateSwipeScreenImage = async (
     ` : `
     **STYLE: Professional Mobile App / Landing Page Design**
     - Modern, clean, and high-impact visual.
-    - If the description asks for a photo, make it realistic and high-resolution.
-    - If the description asks for an illustration, make it flat, modern, and corporate-friendly.
+    - **REALISM**: If the description implies a photo, use a high-resolution, realistic style.
+    - **ILLUSTRATION**: If the description implies an illustration, use a modern, flat, corporate-friendly style.
+    - **NEGATIVE PROMPT (NO MANGA)**: Do NOT use anime, manga, or comic book styles unless explicitly requested in the visual description. Keep it professional and commercial.
     `}
 
-    **Visual Description:**
-    ${screen.visualDescription}
-
-    **Design Layout:**
-    ${spec.layoutBlueprint}
-
-    **Color Palette:**
-    ${spec.colorPalette}
-
-    **Important:**
+    **Important Constraints:**
     - Aspect Ratio: 9:16 (Vertical)
     - **NO TEXT**: Do not render any text inside the image. The text will be overlaid by code.
     - High quality, sharp details.
