@@ -404,32 +404,37 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               </div>
             </div>
 
-            {/* Manga Mode Toggle */}
+            {/* Manga Mode Selection */}
             <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isMangaMode ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase">表現スタイル</p>
-                    <p className="text-sm font-bold text-gray-900">{isMangaMode ? 'マンガモード (Webtoon)' : '通常モード (スワイプLP)'}</p>
-                  </div>
-                </div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-pink-500" />
+                表現スタイル
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => onMangaModeChange(!isMangaMode)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 ${isMangaMode ? 'bg-pink-600' : 'bg-gray-200'}`}
+                  onClick={() => onMangaModeChange(false)}
+                  className={`p-3 rounded-lg border text-left transition-all ${!isMangaMode
+                    ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
                 >
-                  <span
-                    className={`${isMangaMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                  />
+                  <div className={`text-sm font-medium ${!isMangaMode ? 'text-indigo-700' : 'text-gray-900'}`}>
+                    通常モード
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => onMangaModeChange(true)}
+                  className={`p-3 rounded-lg border text-left transition-all ${isMangaMode
+                    ? 'bg-pink-50 border-pink-500 ring-1 ring-pink-500'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                  <div className={`text-sm font-medium ${isMangaMode ? 'text-pink-700' : 'text-gray-900'}`}>
+                    マンガモード
+                  </div>
                 </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500 ml-10">
-                {isMangaMode
-                  ? '「マンガで教育」→「セールス」のハイブリッド構成で生成します。'
-                  : '標準的なスワイプLPの構成で生成します。'}
-              </p>
             </div>
 
             <div className="flex justify-end">
