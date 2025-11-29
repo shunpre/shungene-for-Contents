@@ -404,6 +404,34 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               </div>
             </div>
 
+            {/* Manga Mode Toggle */}
+            <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isMangaMode ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase">表現スタイル</p>
+                    <p className="text-sm font-bold text-gray-900">{isMangaMode ? 'マンガモード (Webtoon)' : '通常モード (スワイプLP)'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onMangaModeChange(!isMangaMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 ${isMangaMode ? 'bg-pink-600' : 'bg-gray-200'}`}
+                >
+                  <span
+                    className={`${isMangaMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 ml-10">
+                {isMangaMode
+                  ? '「マンガで教育」→「セールス」のハイブリッド構成で生成します。'
+                  : '標準的なスワイプLPの構成で生成します。'}
+              </p>
+            </div>
+
             <div className="flex justify-end">
               <button
                 onClick={onAnalyze}
