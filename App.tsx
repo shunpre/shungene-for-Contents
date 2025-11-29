@@ -190,7 +190,13 @@ const App: React.FC = () => {
 
         // 2. Image Generation
         if (!currentScreens[i].imageData && currentScreens[i].designSpec) {
-          const base64Image = await generateSwipeScreenImage(currentScreens[i], files, apiKey, isMangaMode);
+          const base64Image = await generateSwipeScreenImage(
+            currentScreens[i],
+            files,
+            apiKey,
+            isMangaMode,
+            swipeLP.mainCharacterDesign
+          );
           currentScreens[i] = { ...currentScreens[i], imageData: base64Image };
 
           // Update state immediately

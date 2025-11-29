@@ -50,6 +50,7 @@ export interface SwipeScreen {
 export interface SwipeLP {
   screens: SwipeScreen[];
   concept: string;
+  mainCharacterDesign?: string; // Consistent character description for Manga Mode
 }
 
 export enum AppState {

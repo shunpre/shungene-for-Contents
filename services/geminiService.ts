@@ -90,6 +90,7 @@ const SWIPE_LP_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
     concept: { type: Type.STRING, description: "このLP構成の全体的なコンセプトや戦略の概要。" },
+    mainCharacterDesign: { type: Type.STRING, description: "マンガモードの場合の主人公の外見設定（性別、年齢、髪型、服装など）。全ページで一貫性を保つために使用。" },
     screens: {
       type: Type.ARRAY,
       items: SWIPE_SCREEN_SCHEMA
@@ -300,12 +301,14 @@ export const generateSwipeLP = async (
 
     ${isMangaMode ? `
     **【重要】マンガモードの特別指示（ハイブリッド構成）:**
-    - **構成**: 「マンガで教育」→「商品セールス」という流れを作ってください。
-    - **前半（1〜3枚目）**: **「visualStyle: 'manga'」**を指定してください。読者の悩みや共感を呼ぶストーリーを「4コマ漫画」形式で描いてください。
-    - **後半（4〜5枚目）**: **「visualStyle: 'standard'」**を指定してください。解決策としての「商品」を魅力的に見せる、通常のLPデザインに切り替えてください。
+    - **構成**: 「マンガで教育（ストーリー）」→「ブリッジ（気づき）」→「商品セールス（解決策）」という流れを作ってください。
+    - **前半（マンガパート: 全体の40-50%）**: **「visualStyle: 'manga'」**を指定。読者の悩みや共感を呼ぶストーリーを「4コマ漫画」形式で描いてください。
+    - **中盤（ブリッジパート: 全体の10-20%）**: **「visualStyle: 'manga'」**または**「visualStyle: 'standard'」**。マンガの主人公が商品に出会う、または解決策に気づくシーン。
+    - **後半（セールスパート: 全体の30-40%）**: **「visualStyle: 'standard'」**を指定。解決策としての「商品」を魅力的に見せる、通常のLPデザインに切り替えてください。
+    - **mainCharacterDesign**: マンガの主人公の具体的な外見（例：30代女性、茶髪ボブ、オフィスカジュアル、困り顔が多い）を定義してください。
     - **mainCopy**: マンガ部分は「セリフ」、セールス部分は「キャッチコピー」にしてください。
     - **visualDescription**: セリフの内容（悲しみ、喜び、驚き）が**「表情」や「行動」**として視覚的に伝わるように、コマごとの描写を詳細に書いてください。
-    - **枚数**: 全4〜6枚程度で、マンガからセールスへ自然につなげてください。
+    - **枚数**: **全8〜20枚**の範囲で、ストーリーが完結し、かつセールスも十分に行える最適な枚数にしてください（6枚で終わらせないこと）。
     ` : `
     ${targetSegment === 'latent' ? `
     **【重要】潜在層向けのアプローチ:**
@@ -403,6 +406,8 @@ export const generateSingleDesignSpec = async (
   const contextScreens = allScreens.map(s => `Scene ${s.order}: ${s.title} (${s.type})`).join('\n');
 
   const isMangaStyle = targetScreen.visualStyle === 'manga' || (!targetScreen.visualStyle && isMangaMode);
+  // FORCE Standard Style if visualStyle is explicitly 'standard', even if isMangaMode is true globally.
+  const effectiveStyle = targetScreen.visualStyle === 'standard' ? 'standard' : (isMangaStyle ? 'manga' : 'standard');
 
   const prompt = `
     あなたはモバイルLP専門のトップアートディレクターです。
@@ -425,7 +430,7 @@ export const generateSingleDesignSpec = async (
     画像イメージ: ${targetScreen.visualDescription}
 
     --- デザイン要件(厳守) ---
-    ${isMangaStyle ? `
+    ${effectiveStyle === 'manga' ? `
     **【重要】マンガモード（Webtoonスタイル）のデザイン指示:**
     1. **レイアウト**: **「1列4行の縦積み（4コマ漫画）」**のレイアウトを指示してください。
     2. **layoutBlueprint**: 「画面を縦に4分割し、上から順にコマ1, 2, 3, 4を配置。コマ間に明確な境界線を入れる」と記述してください。
@@ -587,7 +592,8 @@ export const generateSwipeScreenImage = async (
   screen: SwipeScreen,
   files: UploadedFile[],
   apiKey: string,
-  isMangaMode: boolean = false
+  isMangaMode: boolean = false,
+  mainCharacterDesign?: string
 ): Promise<string> => {
   const ai = getAI(apiKey);
 
@@ -633,8 +639,13 @@ export const generateSwipeScreenImage = async (
     - **ORDER**: Panel 1 (Top) -> Panel 2 -> Panel 3 -> Panel 4 (Bottom).
     - **READING DIRECTION**: Top to Bottom (Standard Webtoon format).
     - **CONTENT**: Create a sequence of 4 scenes as described in the Visual Description.
+    - **CHARACTER CONSISTENCY**: **Use the following character design for the protagonist in ALL panels:**
+      - **${mainCharacterDesign || 'Consistent character appearance'}**
+      - Ensure the same person appears in all panels where applicable.
     - **STYLE**: High-quality anime/manga art style.
-    - **NO TEXT**: Do not include speech bubbles or text inside the panels.
+    - **TEXT/DIALOGUE**: **INCLUDE SPEECH BUBBLES** containing the dialogue specified in the "Main Copy".
+      - The text MUST be legible and placed naturally within speech bubbles.
+      - If the text is Japanese, ensure it is written vertically if appropriate for the style, or horizontally if better for Webtoon.
     - **BORDERS**: Clear horizontal borders between panels.
     ` : `
     **STYLE: Professional Mobile App / Landing Page Design**
@@ -646,7 +657,8 @@ export const generateSwipeScreenImage = async (
 
     **Important Constraints:**
     - Aspect Ratio: 9:16 (Vertical)
-    - **NO TEXT**: Do not render any text inside the image. The text will be overlaid by code.
+    - **NO TEXT (Standard Mode Only)**: For standard LP slides, do not render text inside the image.
+    - **TEXT ALLOWED (Manga Mode Only)**: For Manga slides, speech bubbles are REQUIRED.
     - High quality, sharp details.
 
     **ASSET COMPOSITION INSTRUCTIONS:**
