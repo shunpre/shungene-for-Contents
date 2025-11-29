@@ -168,28 +168,19 @@ const App: React.FC = () => {
       if (!currentScreens[i]) continue;
 
       try {
-        // 1. Design Spec Generation
-        if (!currentScreens[i].designSpec) {
-          const spec = await generateSingleDesignSpec(
-            currentScreens[i],
-            currentScreens,
-            files,
-            swipeLP.concept,
-            apiKey,
-            isMangaMode
-          ); currentScreens[i] = { ...currentScreens[i], designSpec: spec };
+        // 1. Image Generation (Design Spec is already in the screen object)
+        if (!currentScreens[i].imageData) {
+          // Ensure designSpec exists (it should from the initial generation)
+          if (!currentScreens[i].designSpec) {
+            console.warn(`Screen ${i + 1} missing designSpec, using default.`);
+            currentScreens[i].designSpec = {
+              layoutBlueprint: isMangaMode ? '1列4行の縦積み（4コマ漫画）' : 'フルスクリーン・オーバーレイ',
+              visualAssetInstruction: 'AI生成',
+              typographyInstruction: '標準',
+              colorPalette: '#FFFFFF'
+            };
+          }
 
-          // Update state immediately so user sees progress
-          setSwipeLP(prev => {
-            if (!prev || !prev.screens) return null;
-            const updated = [...prev.screens];
-            updated[i] = currentScreens[i];
-            return { ...prev, screens: updated };
-          });
-        }
-
-        // 2. Image Generation
-        if (!currentScreens[i].imageData && currentScreens[i].designSpec) {
           const base64Image = await generateSwipeScreenImage(
             currentScreens[i],
             files,

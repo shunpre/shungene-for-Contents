@@ -75,9 +75,20 @@ const SWIPE_SCREEN_SCHEMA: Schema = {
       type: Type.STRING,
       enum: ['manga', 'standard'],
       description: "このスライドの表現スタイル。'manga'（4コマ漫画）か'standard'（通常LP）か。"
+    },
+    designSpec: {
+      type: Type.OBJECT,
+      description: "このスライドの具体的なデザイン指示書。visualStyleに基づいて作成すること。",
+      properties: {
+        layoutBlueprint: { type: Type.STRING, description: "9:16の縦長画面における具体的な要素配置（例：背景全面に画像、中央に白文字でキャッチコピー）。マンガモードの場合は「1列4行の4コマ配置」など。" },
+        visualAssetInstruction: { type: Type.STRING, description: "アップロードされたファイル名を参照し、どの画像を使用するか、または新規撮影/生成の具体的な指示。" },
+        typographyInstruction: { type: Type.STRING, description: "フォントの太さ、サイズ、色、強調箇所の指示。" },
+        colorPalette: { type: Type.STRING, description: "使用するカラーコードや配色の詳細。" }
+      },
+      required: ["layoutBlueprint", "visualAssetInstruction", "typographyInstruction", "colorPalette"]
     }
   },
-  required: ["order", "type", "title", "mainCopy", "visualDescription", "designNote", "visualStyle"]
+  required: ["order", "type", "title", "mainCopy", "visualDescription", "designNote", "visualStyle", "designSpec"]
 };
 
 const DESIGN_SPEC_SCHEMA: Schema = {
@@ -314,6 +325,9 @@ export const generateSwipeLP = async (
     - **mainCopy**: マンガ部分は「セリフ」、セールス部分は「キャッチコピー」にしてください。
     - **visualDescription**: セリフの内容（悲しみ、喜び、驚き）が**「表情」や「行動」**として視覚的に伝わるように、コマごとの描写を詳細に書いてください。
     - **枚数**: **全8〜20枚**の範囲で、ストーリーが完結し、かつセールスも十分に行える最適な枚数にしてください（6枚で終わらせないこと）。
+    - **designSpec**: 各スライドの \`visualStyle\` に合わせて、適切なデザイン指示（layoutBlueprintなど）を必ず生成してください。
+      - **'manga'の場合**: layoutBlueprintは「1列4行の縦積み（4コマ漫画）」とし、visualAssetInstructionは「AI生成によるマンガイラスト」としてください。
+      - **'standard'の場合**: layoutBlueprintは「フルスクリーン・オーバーレイ」とし、visualAssetInstructionは「高品質な写真」としてください。
     ` : `
     ${targetSegment === 'latent' ? `
     **【重要】潜在層向けのアプローチ:**
@@ -338,23 +352,23 @@ export const generateSwipeLP = async (
     解決策: ${profile.solutions.join(', ')}
     トーン: ${profile.toneOfVoice}
 
-    --- 制作ガイドライン (厳守) ---
+    --- 制作ガイドライン(厳守) ---
     ${SWIPE_LP_GUIDELINES}
 
     重要指示：
-    1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット（商品名・オファー必須）'}で惹きつけてください。
+    1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット（商品名・オファー必須）'} で惹きつけてください。
     2. **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
-    3. **ストーリー性**: ${targetSegment === 'latent' ? '「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」' : '「結論」→「証拠」→「他社比較」→「オファー」'}という流れを意識してください。
+    3. **ストーリー性**: ${targetSegment === 'latent' ? '「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」' : '「結論」→「証拠」→「他社比較」→「オファー」'} という流れを意識してください。
     4. **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。**特に、mainCopyの内容（感情、状況、数値）を視覚的に補完・強調する描写にしてください。**
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
 
-  Schema:
+    Schema:
     ${JSON.stringify(SWIPE_LP_SCHEMA, null, 2)}
     
     各スライドの 'title' は短く（15文字以内推奨）、直感的に刺さるものにしてください。
-  'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
+    'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
   `;
 
   try {
@@ -388,7 +402,13 @@ export const generateSwipeLP = async (
       mainCopy: s.mainCopy || '本文が生成されませんでした。',
       visualDescription: s.visualDescription || '製品の魅力的な画像',
       designNote: s.designNote || '',
-      visualStyle: s.visualStyle || (isMangaMode ? 'manga' : 'standard')
+      visualStyle: s.visualStyle || (isMangaMode ? 'manga' : 'standard'),
+      designSpec: s.designSpec || {
+        layoutBlueprint: isMangaMode ? '1列4行の縦積み（4コマ漫画）' : 'フルスクリーン・オーバーレイ',
+        visualAssetInstruction: 'AI生成',
+        typographyInstruction: '標準',
+        colorPalette: '#FFFFFF'
+      }
     }));
 
     return parsed;
@@ -398,88 +418,7 @@ export const generateSwipeLP = async (
   }
 };
 
-export const generateSingleDesignSpec = async (
-  targetScreen: SwipeScreen,
-  allScreens: SwipeScreen[],
-  uploadedFiles: UploadedFile[],
-  concept: string,
-  apiKey: string,
-  isMangaMode: boolean = false
-): Promise<DesignSpec> => {
 
-  const fileList = uploadedFiles.map(f => `- ${f.name} (${f.mimeType || 'unknown'})`).join('\n');
-  // Provide context about previous screens to ensure consistency, but focus on the target screen
-  const contextScreens = allScreens.map(s => `Scene ${s.order}: ${s.title} (${s.type})`).join('\n');
-
-  const isMangaStyle = targetScreen.visualStyle === 'manga' || (!targetScreen.visualStyle && isMangaMode);
-  // FORCE Standard Style if visualStyle is explicitly 'standard', even if isMangaMode is true globally.
-  const effectiveStyle = targetScreen.visualStyle === 'standard' ? 'standard' : (isMangaStyle ? 'manga' : 'standard');
-
-  const prompt = `
-    あなたはモバイルLP専門のトップアートディレクターです。
-    現在、以下のコピー構成案（SwipeLP）のうち、「Scene ${targetScreen.order}」の「デザイン指示書」を作成してください。
-
-    --- コンセプト ---
-    ${concept}
-
-    --- 全体の流れ(Context) ---
-    ${contextScreens}
-
-    --- 利用可能なアセット素材 ---
-    ${fileList}
-
-    --- ターゲットスライド情報 ---
-    順序: ${targetScreen.order}
-    役割: ${targetScreen.type}
-    タイトル: ${targetScreen.title}
-    本文: ${targetScreen.mainCopy}
-    画像イメージ: ${targetScreen.visualDescription}
-
-    --- デザイン要件(厳守) ---
-    ${effectiveStyle === 'manga' ? `
-    **【重要】マンガモード（Webtoonスタイル）のデザイン指示:**
-    1. **レイアウト**: **「1列4行の縦積み（4コマ漫画）」**のレイアウトを指示してください。
-    2. **layoutBlueprint**: 「画面を縦に4分割し、上から順にコマ1, 2, 3, 4を配置。コマ間に明確な境界線を入れる」と記述してください。
-    3. **visualAssetInstruction**: 「AI生成によるマンガイラストを使用」と明記してください。
-    4. **typographyInstruction**: 「マンガのセリフとして読みやすいフォント。吹き出し風のあしらいは画像生成側ではなく、ここでの指示（オーバーレイ）で表現する」としてください。
-    ` : `
-    **【重要】通常LPモードのデザイン指示:**
-    1. **アスペクト比 9:16（縦長全画面）**。
-    2. **フルスクリーン・オーバーレイレイアウト**:
-       - 「画像が上、文字が下」のブログ調レイアウトは**禁止**です。
-       - 背景全面に高品質な画像を使用し、その上にテキストを配置してください。
-    3. **可読性の確保**:
-       - 背景画像の上に文字を乗せるため、ドロップシャドウ、文字の袋文字、半透明の座布団（テキストボックス）などの処理を具体的に指示してください。
-    4. **視覚情報の密度**:
-       - 可能な限り、図解、矢印、グラフ、No.1バッジ、権威性の証明（メダル等）をビジュアルに組み込んでください。
-    5. **FV（Scene 1）**:
-       - 1枚目はポスターの表紙です。最も力強いキービジュアルとタイトルロゴの配置を指示してください。
-    `}
-
-    --- 出力 ---
-    必ず以下のJSONスキーマに従ってください。
-
-Schema:
-    ${JSON.stringify(DESIGN_SPEC_SCHEMA, null, 2)}
-`;
-
-  try {
-    const ai = getAI(apiKey);
-    const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Strong reasoning for design layout
-      contents: prompt,
-      config: {
-        temperature: 0.5,
-      }
-    }));
-
-    return parseJsonResponse<DesignSpec>(response.text);
-
-  } catch (error) {
-    console.error("Gemini Single Design Spec Gen Error:", error);
-    throw error;
-  }
-};
 
 export const regenerateSwipeScreen = async (
   profile: ProductProfile,
@@ -620,24 +559,24 @@ export const generateSwipeScreenImage = async (
   const isMangaStyle = screen.visualStyle === 'manga' || (!screen.visualStyle && isMangaMode);
 
   const prompt = `
-    **CRITICAL INSTRUCTION: STRICTLY FOLLOW THE DESIGN SPEC AND LAYOUT BLUEPRINT.**
-    You are a high-end UI/UX designer and illustrator. Your goal is to generate a final production-quality image that matches the design specification exactly.
+  ** CRITICAL INSTRUCTION: STRICTLY FOLLOW THE DESIGN SPEC AND LAYOUT BLUEPRINT.**
+    You are a high - end UI / UX designer and illustrator.Your goal is to generate a final production - quality image that matches the design specification exactly.
 
-    **Design Layout (BLUEPRINT):**
-    ${spec.layoutBlueprint}
-    *Render the image EXACTLY according to this layout.*
+    ** Design Layout(BLUEPRINT):**
+  ${spec.layoutBlueprint}
+    * Render the image EXACTLY according to this layout.*
 
-    **Visual Description (CONTENT):**
-    ${screen.visualDescription}
-    *Ensure the visual content matches this description and the context of the copy.*
+    ** Visual Description(CONTENT):**
+  ${screen.visualDescription}
+    * Ensure the visual content matches this description and the context of the copy.*
 
-    **Context (COPY):**
-    Title: ${screen.title}
+    ** Context(COPY):**
+  Title: ${screen.title}
     Main Copy: ${screen.mainCopy}
-    *The image must support this message. If the copy mentions a specific emotion, object, or situation, it MUST be present in the image.*
+    * The image must support this message.If the copy mentions a specific emotion, object, or situation, it MUST be present in the image.*
 
-    **Color Palette:**
-    ${spec.colorPalette}
+    ** Color Palette:**
+  ${spec.colorPalette}
 
     ${isMangaStyle ? `
     **STYLE: 4-PANEL VERTICAL MANGA (Webtoon Style)**
@@ -661,15 +600,15 @@ export const generateSwipeScreenImage = async (
     - **NEGATIVE PROMPT (NO MANGA)**: Do NOT use anime, manga, or comic book styles unless explicitly requested in the visual description. Keep it professional and commercial.
     `}
 
-    **Important Constraints:**
-    - Aspect Ratio: 9:16 (Vertical)
-    - **NO TEXT (Standard Mode Only)**: For standard LP slides, do not render text inside the image.
-    - **TEXT ALLOWED (Manga Mode Only)**: For Manga slides, speech bubbles are REQUIRED.
+    ** Important Constraints:**
+  - Aspect Ratio: 9: 16(Vertical)
+    - ** NO TEXT(Standard Mode Only) **: For standard LP slides, do not render text inside the image.
+    - ** TEXT ALLOWED(Manga Mode Only) **: For Manga slides, speech bubbles are REQUIRED.
     - High quality, sharp details.
 
-    **ASSET COMPOSITION INSTRUCTIONS:**
+    ** ASSET COMPOSITION INSTRUCTIONS:**
 
-    ${productImages.length > 0 ? `
+  ${productImages.length > 0 ? `
     [PRODUCT IMAGES PROVIDED]
     - Use the provided product image(s) as the HERO element.
     - Composite naturally: Model holding it, placed on a table, or floating in a stylized background.
@@ -700,10 +639,10 @@ export const generateSwipeScreenImage = async (
     ` : ''
     }
 
-    **CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
-    - **Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
-    - The image IS the screen content itself. It should be full-bleed.
-    - Do not produce low-density "blog" graphics. Make it look like a high-end magazine ad or infographic.
+    ** CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
+    - ** Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
+  - The image IS the screen content itself.It should be full - bleed.
+    - Do not produce low - density "blog" graphics.Make it look like a high - end magazine ad or infographic.
   `;
 
   const parts: any[] = [{ text: prompt }];
