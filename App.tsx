@@ -170,8 +170,14 @@ const App: React.FC = () => {
       try {
         // 1. Design Spec Generation
         if (!currentScreens[i].designSpec) {
-          const spec = await generateSingleDesignSpec(currentScreens[i], currentScreens, files, swipeLP.concept, apiKey);
-          currentScreens[i] = { ...currentScreens[i], designSpec: spec };
+          const spec = await generateSingleDesignSpec(
+            currentScreens[i],
+            currentScreens,
+            files,
+            swipeLP.concept,
+            apiKey,
+            isMangaMode
+          ); currentScreens[i] = { ...currentScreens[i], designSpec: spec };
 
           // Update state immediately so user sees progress
           setSwipeLP(prev => {

@@ -394,49 +394,59 @@ export const generateSingleDesignSpec = async (
   allScreens: SwipeScreen[],
   uploadedFiles: UploadedFile[],
   concept: string,
-  apiKey: string
+  apiKey: string,
+  isMangaMode: boolean = false
 ): Promise<DesignSpec> => {
 
   const fileList = uploadedFiles.map(f => `- ${f.name} (${f.mimeType || 'unknown'})`).join('\n');
   // Provide context about previous screens to ensure consistency, but focus on the target screen
   const contextScreens = allScreens.map(s => `Scene ${s.order}: ${s.title} (${s.type})`).join('\n');
 
-  const prompt = `
-  あなたはモバイルLP専門のトップアートディレクターです。
-  現在、以下のコピー構成案（SwipeLP）のうち、「Scene ${targetScreen.order}」の「デザイン指示書」を作成してください。
+  const isMangaStyle = targetScreen.visualStyle === 'manga' || (!targetScreen.visualStyle && isMangaMode);
 
-  --- コンセプト-- -
+  const prompt = `
+    あなたはモバイルLP専門のトップアートディレクターです。
+    現在、以下のコピー構成案（SwipeLP）のうち、「Scene ${targetScreen.order}」の「デザイン指示書」を作成してください。
+
+    --- コンセプト ---
     ${concept}
 
-  --- 全体の流れ(Context)-- -
+    --- 全体の流れ(Context) ---
     ${contextScreens}
 
-  --- 利用可能なアセット素材-- -
+    --- 利用可能なアセット素材 ---
     ${fileList}
-    ※ 画像や動画の素材がここにある場合、積極的にデザイン指示に組み込んでください（ファイル名を指定）。
-    ※ 素材がない場合は、具体的な撮影指示や生成AIへのプロンプト指示を書いてください。
 
---- ターゲットスライド情報-- -
-  順序: ${targetScreen.order}
-役割: ${targetScreen.type}
-タイトル: ${targetScreen.title}
-本文: ${targetScreen.mainCopy}
-画像イメージ: ${targetScreen.visualDescription}
+    --- ターゲットスライド情報 ---
+    順序: ${targetScreen.order}
+    役割: ${targetScreen.type}
+    タイトル: ${targetScreen.title}
+    本文: ${targetScreen.mainCopy}
+    画像イメージ: ${targetScreen.visualDescription}
 
---- デザイン要件(厳守)-- -
-  1. ** アスペクト比 9: 16（縦長全画面）**。
-2. ** フルスクリーン・オーバーレイレイアウト **:
-- 「画像が上、文字が下」のブログ調レイアウトは ** 禁止 ** です。
-- 背景全面に高品質な画像を使用し、その上にテキストを配置してください。
-3. ** 可読性の確保 **:
-- 背景画像の上に文字を乗せるため、ドロップシャドウ、文字の袋文字、半透明の座布団（テキストボックス）などの処理を具体的に指示してください。
-4. ** 視覚情報の密度 **:
-- 可能な限り、図解、矢印、グラフ、No.1バッジ、権威性の証明（メダル等）をビジュアルに組み込んでください。
-5. ** FV（Scene 1）**:
-- 1枚目はポスターの表紙です。最も力強いキービジュアルとタイトルロゴの配置を指示してください。
+    --- デザイン要件(厳守) ---
+    ${isMangaStyle ? `
+    **【重要】マンガモード（Webtoonスタイル）のデザイン指示:**
+    1. **レイアウト**: **「1列4行の縦積み（4コマ漫画）」**のレイアウトを指示してください。
+    2. **layoutBlueprint**: 「画面を縦に4分割し、上から順にコマ1, 2, 3, 4を配置。コマ間に明確な境界線を入れる」と記述してください。
+    3. **visualAssetInstruction**: 「AI生成によるマンガイラストを使用」と明記してください。
+    4. **typographyInstruction**: 「マンガのセリフとして読みやすいフォント。吹き出し風のあしらいは画像生成側ではなく、ここでの指示（オーバーレイ）で表現する」としてください。
+    ` : `
+    **【重要】通常LPモードのデザイン指示:**
+    1. **アスペクト比 9:16（縦長全画面）**。
+    2. **フルスクリーン・オーバーレイレイアウト**:
+       - 「画像が上、文字が下」のブログ調レイアウトは**禁止**です。
+       - 背景全面に高品質な画像を使用し、その上にテキストを配置してください。
+    3. **可読性の確保**:
+       - 背景画像の上に文字を乗せるため、ドロップシャドウ、文字の袋文字、半透明の座布団（テキストボックス）などの処理を具体的に指示してください。
+    4. **視覚情報の密度**:
+       - 可能な限り、図解、矢印、グラフ、No.1バッジ、権威性の証明（メダル等）をビジュアルに組み込んでください。
+    5. **FV（Scene 1）**:
+       - 1枚目はポスターの表紙です。最も力強いキービジュアルとタイトルロゴの配置を指示してください。
+    `}
 
---- 出力-- -
-  必ず以下のJSONスキーマに従ってください。
+    --- 出力 ---
+    必ず以下のJSONスキーマに従ってください。
 
 Schema:
     ${JSON.stringify(DESIGN_SPEC_SCHEMA, null, 2)}
