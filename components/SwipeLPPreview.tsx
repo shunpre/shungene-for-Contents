@@ -315,24 +315,15 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
 
         {/* Right: Detail Editor */}
         <div className="lg:col-span-7 h-[650px]">
-          {activeTab === 'copy' ? (
-            <ScreenEditor
-              screen={currentScreen}
-              index={selectedIndex}
-              onUpdate={(updated) => onUpdateScreen(selectedIndex, updated)}
-              onRegenerate={(instruction) => onRegenerateScreen(selectedIndex, instruction)}
-            />
-          ) : (
-            <VisualEditor
-              screen={currentScreen}
-              index={selectedIndex}
-              isProcessing={isGeneratingVisuals && visualProgressIndex === selectedIndex}
-              onUpdate={(updated) => onUpdateScreen(selectedIndex, updated)}
-              onRegenerate={(instruction) => onRegenerateVisual(selectedIndex, instruction)}
-              onUndo={() => onUndoVisual && onUndoVisual(selectedIndex)}
-              onRedo={() => onRedoVisual && onRedoVisual(selectedIndex)}
-            />
-          )}
+          <ScreenEditor
+            screen={currentScreen}
+            index={selectedIndex}
+            onUpdate={(updated) => onUpdateScreen(selectedIndex, updated)}
+            onRegenerate={(instruction) => onRegenerateScreen(selectedIndex, instruction)}
+            onRegenerateDesign={(instruction) => onRegenerateVisual(selectedIndex, instruction)}
+            onUndoDesign={() => onUndoVisual && onUndoVisual(selectedIndex)}
+            onRedoDesign={() => onRedoVisual && onRedoVisual(selectedIndex)}
+          />
         </div>
       </div>
     </div>
@@ -344,12 +335,22 @@ const ScreenEditor: React.FC<{
   index: number;
   onUpdate: (s: SwipeScreen) => void;
   onRegenerate: (instruction: string) => Promise<SwipeScreen>;
-}> = ({ screen, index, onUpdate, onRegenerate }) => {
+  onRegenerateDesign: (instruction: string) => Promise<DesignSpec>;
+  onUndoDesign?: () => void;
+  onRedoDesign?: () => void;
+}> = ({ screen, index, onUpdate, onRegenerate, onRegenerateDesign, onUndoDesign, onRedoDesign }) => {
   const [regenerateInput, setRegenerateInput] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+  const [designRegenerateInput, setDesignRegenerateInput] = useState('');
+  const [isDesignRegenerating, setIsDesignRegenerating] = useState(false);
+
   // Safe guard in case screen is null inside editor
   if (!screen) return null;
+
+  // Check history availability
+  const hasHistory = screen?.history && screen.history.length > 0;
+  const hasRedoHistory = screen?.redoHistory && screen.redoHistory.length > 0;
 
   const handleTextChange = (field: keyof SwipeScreen, value: string) => {
     onUpdate({ ...screen, [field]: value });
@@ -367,143 +368,9 @@ const ScreenEditor: React.FC<{
     onUpdate({ ...screen, mangaScript: updatedScript });
   };
 
-  const handleRegenerateSubmit = async () => {
-    if (!regenerateInput.trim()) return;
-    setIsRegenerating(true);
-    try {
-      await onRegenerate(regenerateInput);
-      setRegenerateInput('');
-    } catch (e) {
-      console.error(e);
-      alert("再生成に失敗しました。");
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  const isManga = screen.visualStyle === 'manga' && !!screen.mangaScript;
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col animate-in slide-in-from-right-4 duration-500">
-      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <StickyNote className="w-4 h-4 text-indigo-600" />
-          <h3 className="font-bold text-gray-900">Scene {screen.order}: {isManga ? 'マンガシナリオ編集' : 'コピー編集'}</h3>
-        </div>
-        <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
-          Type: {screen.type}
-        </span>
-      </div>
-
-      <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-        {isManga ? (
-          // MANGA SCRIPT EDITOR
-          <div className="space-y-6">
-            <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-800 mb-4">
-              💡 4コマ漫画のシナリオを編集します。ここでの変更は画像生成プロンプトに反映されます。
-            </div>
-            {['panel1', 'panel2', 'panel3', 'panel4'].map((panelKey, i) => (
-              <div key={panelKey} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">コマ {i + 1}</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">状況 (Situation)</label>
-                    <textarea
-                      rows={2}
-                      value={screen.mangaScript?.[panelKey as any]?.situation || ''}
-                      onChange={(e) => handleMangaPanelChange(panelKey as any, 'situation', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">セリフ (Dialogue)</label>
-                    <input
-                      type="text"
-                      value={screen.mangaScript?.[panelKey as any]?.dialogue || ''}
-                      onChange={(e) => handleMangaPanelChange(panelKey as any, 'dialogue', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm font-bold text-blue-900"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          // STANDARD COPY EDITOR
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">キャッチコピー (Title)</label>
-              <input
-                type="text"
-                value={screen.title || ''} // Default value
-                onChange={(e) => handleTextChange('title', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold text-lg"
-                placeholder="読者の目を引く短い見出し"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">本文コピー (Main Text)</label>
-              <textarea
-                rows={5}
-                value={screen.mainCopy || ''} // Default value
-                onChange={(e) => handleTextChange('mainCopy', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm leading-relaxed"
-                placeholder="ストーリーを語る本文"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* AI Regenerate Footer */}
-      <div className="p-4 bg-gray-900 text-white mt-auto">
-        <label className="block text-xs font-medium text-gray-300 mb-2 flex items-center gap-2">
-          <RefreshCw className="w-3 h-3 text-indigo-400" />
-          AIリテイク (このページを作り直す)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="指示を入力 (例: もっと不安に寄り添う内容にして)"
-            value={regenerateInput}
-            onChange={(e) => setRegenerateInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleRegenerateSubmit()}
-            disabled={isRegenerating}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
-          />
-          <button
-            onClick={handleRegenerateSubmit}
-            disabled={isRegenerating || !regenerateInput.trim()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-          >
-            {isRegenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : '修正実行'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const VisualEditor: React.FC<{
-  screen: SwipeScreen;
-  index: number;
-  isProcessing: boolean;
-  onUpdate: (s: SwipeScreen) => void;
-  onRegenerate: (instruction: string) => Promise<DesignSpec>;
-  onUndo: () => void;
-  onRedo: () => void;
-}> = ({ screen, index, isProcessing, onUpdate, onRegenerate, onUndo, onRedo }) => {
-  const [regenerateInput, setRegenerateInput] = useState('');
-  const [isRegenerating, setIsRegenerating] = useState(false);
-
-  // Safe access
-  const spec = screen?.designSpec;
-  const hasHistory = screen?.history && screen.history.length > 0;
-  const hasRedoHistory = screen?.redoHistory && screen.redoHistory.length > 0;
-
   const handleSpecChange = (field: keyof DesignSpec, value: string) => {
-    if (!spec) return;
-    const newSpec = { ...spec, [field]: value };
+    if (!screen.designSpec) return;
+    const newSpec = { ...screen.designSpec, [field]: value };
     onUpdate({ ...screen, designSpec: newSpec });
   };
 
@@ -521,144 +388,230 @@ const VisualEditor: React.FC<{
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit on Shift+Enter if not composing (IME)
-    if (e.key === 'Enter' && e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      handleRegenerateSubmit();
+  const handleDesignRegenerateSubmit = async () => {
+    if (!designRegenerateInput.trim()) return;
+    setIsDesignRegenerating(true);
+    try {
+      await onRegenerateDesign(designRegenerateInput);
+      setDesignRegenerateInput('');
+    } catch (e) {
+      console.error(e);
+      alert("デザイン再生成に失敗しました。");
+    } finally {
+      setIsDesignRegenerating(false);
     }
   };
 
-  if (!spec && isProcessing) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-purple-200 h-full flex flex-col items-center justify-center p-10 gap-4">
-        <Loader2 className="w-10 h-10 text-purple-600 animate-spin" />
-        <p className="text-gray-600 font-medium">Gemini 3 がデザイン指示と画像を生成中...</p>
-        <p className="text-xs text-gray-400">9:16 レイアウト、配色、アセット配置を計算しています</p>
-      </div>
-    );
-  }
-
-  // Pending state for future slides
-  if (!spec) return <div className="p-10 text-center text-gray-400">待機中...</div>;
+  const isManga = screen.visualStyle === 'manga' && !!screen.mangaScript;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-purple-200 overflow-hidden h-full flex flex-col animate-in slide-in-from-right-4 duration-500">
-      <div className="px-6 py-4 border-b border-purple-100 bg-purple-50 flex justify-between items-center">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col animate-in slide-in-from-right-4 duration-500">
+      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Palette className="w-4 h-4 text-purple-600" />
-          <h3 className="font-bold text-gray-900">Scene {screen.order}: デザイン指示書の編集</h3>
+          <StickyNote className="w-4 h-4 text-indigo-600" />
+          <h3 className="font-bold text-gray-900">Scene {screen.order}: 統合エディタ (シナリオ & デザイン)</h3>
         </div>
-        <span className="text-xs font-bold text-purple-600 bg-white border border-purple-200 px-2 py-1 rounded">
-          Design & Image
+        <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
+          Type: {screen.type}
         </span>
       </div>
 
-      <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-xs text-yellow-800 mb-4">
-          💡 ここでの変更やAIリテイク指示は、即座に<strong>画像の再生成</strong>に反映されます。
+      <div className="p-6 space-y-8 flex-1 overflow-y-auto">
+        {/* SECTION 1: TEXT / SCENARIO */}
+        <div>
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
+            1. シナリオ & コピー (Text Content)
+          </h4>
+          {isManga ? (
+            // MANGA SCRIPT EDITOR
+            <div className="space-y-6">
+              <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-800 mb-4">
+                💡 4コマ漫画のシナリオを編集します。ここでの変更は画像生成プロンプトに反映されます。
+              </div>
+              {['panel1', 'panel2', 'panel3', 'panel4'].map((panelKey, i) => (
+                <div key={panelKey} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">コマ {i + 1}</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">状況 (Situation)</label>
+                      <textarea
+                        rows={2}
+                        value={screen.mangaScript?.[panelKey as any]?.situation || ''}
+                        onChange={(e) => handleMangaPanelChange(panelKey as any, 'situation', e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">セリフ (Dialogue)</label>
+                      <input
+                        type="text"
+                        value={screen.mangaScript?.[panelKey as any]?.dialogue || ''}
+                        onChange={(e) => handleMangaPanelChange(panelKey as any, 'dialogue', e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm font-bold text-blue-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // STANDARD COPY EDITOR
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">キャッチコピー (Title)</label>
+                <input
+                  type="text"
+                  value={screen.title || ''} // Default value
+                  onChange={(e) => handleTextChange('title', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold text-lg"
+                  placeholder="読者の目を引く短い見出し"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">本文コピー (Main Text)</label>
+                <textarea
+                  rows={5}
+                  value={screen.mainCopy || ''} // Default value
+                  onChange={(e) => handleTextChange('mainCopy', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm leading-relaxed"
+                  placeholder="ストーリーを語る本文"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Text AI Retake */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="block text-xs font-bold text-gray-500 mb-2 flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" /> テキストAIリテイク
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="テキストの修正指示 (例: もっと共感できる内容に)"
+                value={regenerateInput}
+                onChange={(e) => setRegenerateInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleRegenerateSubmit()}
+                disabled={isRegenerating}
+                className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded text-xs text-gray-900 placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={handleRegenerateSubmit}
+                disabled={isRegenerating || !regenerateInput.trim()}
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isRegenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : '修正'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Design Fields */}
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Layout className="w-3 h-3" /> レイアウト設計 (Layout Blueprint)
-            </label>
-            <textarea
-              rows={3}
-              value={spec.layoutBlueprint || ''} // Default value
-              onChange={(e) => handleSpecChange('layoutBlueprint', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-50"
-            />
-          </div>
+        {/* SECTION 2: DESIGN SPEC */}
+        <div>
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
+            2. デザイン指示書 (Design Spec)
+            <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full normal-case font-normal">
+              画像生成の設計図
+            </span>
+          </h4>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <FileImage className="w-3 h-3" /> 使用アセット指示 (Assets)
-            </label>
-            <textarea
-              rows={3}
-              value={spec.visualAssetInstruction || ''} // Default value
-              onChange={(e) => handleSpecChange('visualAssetInstruction', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-50"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Type className="w-3 h-3" /> タイポグラフィ
+                <Layout className="w-3 h-3" /> レイアウト設計 (Layout Blueprint)
               </label>
-              <input
-                type="text"
-                value={spec.typographyInstruction || ''} // Default value
-                onChange={(e) => handleSpecChange('typographyInstruction', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm"
+              <textarea
+                rows={3}
+                value={screen.designSpec?.layoutBlueprint || ''}
+                onChange={(e) => handleSpecChange('layoutBlueprint', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-50"
+                placeholder="例: 背景全面に画像、中央に白文字でキャッチコピー"
               />
             </div>
+
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Palette className="w-3 h-3" /> 配色 (Color Palette)
+                <FileImage className="w-3 h-3" /> 使用アセット指示 (Assets)
               </label>
+              <textarea
+                rows={3}
+                value={screen.designSpec?.visualAssetInstruction || ''}
+                onChange={(e) => handleSpecChange('visualAssetInstruction', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-50"
+                placeholder="例: 笑顔の女性のアップ、明るい雰囲気"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Type className="w-3 h-3" /> タイポグラフィ
+                </label>
+                <input
+                  type="text"
+                  value={screen.designSpec?.typographyInstruction || ''}
+                  onChange={(e) => handleSpecChange('typographyInstruction', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Palette className="w-3 h-3" /> 配色 (Color Palette)
+                </label>
+                <input
+                  type="text"
+                  value={screen.designSpec?.colorPalette || ''}
+                  onChange={(e) => handleSpecChange('colorPalette', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Design AI Retake */}
+          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <label className="block text-xs font-bold text-purple-700 mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> デザインAIリテイク
+            </label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={spec.colorPalette || ''} // Default value
-                onChange={(e) => handleSpecChange('colorPalette', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm"
+                placeholder="デザインの修正指示 (例: もっと落ち着いた色味に)"
+                value={designRegenerateInput}
+                onChange={(e) => setDesignRegenerateInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleDesignRegenerateSubmit()}
+                disabled={isDesignRegenerating}
+                className="flex-1 px-3 py-2 bg-white border border-purple-300 rounded text-xs text-gray-900 placeholder-purple-300 focus:ring-1 focus:ring-purple-500 outline-none disabled:opacity-50"
               />
+              <button
+                onClick={handleDesignRegenerateSubmit}
+                disabled={isDesignRegenerating || !designRegenerateInput.trim()}
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isDesignRegenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : '修正'}
+              </button>
+
+              {/* Undo/Redo Buttons */}
+              <button
+                onClick={onUndoDesign}
+                disabled={!hasHistory || isDesignRegenerating}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-l text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap border-r border-gray-600"
+                title="ひとつ前の状態に戻す"
+              >
+                <Undo className="w-3 h-3" />
+              </button>
+              <button
+                onClick={onRedoDesign}
+                disabled={!hasRedoHistory || isDesignRegenerating}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-r text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap"
+                title="やり直す (戻した操作を取り消す)"
+              >
+                <Redo className="w-3 h-3" />
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Approve / Regenerate Footer */}
-      {!isProcessing && (
-        <div className="p-4 bg-gray-900 text-white mt-auto border-t border-gray-800">
-          <label className="block text-xs font-medium text-purple-300 mb-2 flex items-center gap-2">
-            <Sparkles className="w-3 h-3" />
-            デザイン修正 & 画像再生成
-          </label>
-          <div className="flex gap-2 items-start">
-            <textarea
-              placeholder="例: 背景をもっと明るくして (Shift+Enterで送信)"
-              value={regenerateInput}
-              onChange={(e) => setRegenerateInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isRegenerating}
-              rows={1}
-              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500 outline-none disabled:opacity-50 resize-none"
-            />
-            <button
-              onClick={handleRegenerateSubmit}
-              disabled={isRegenerating || !regenerateInput.trim()}
-              className="px-4 py-2 h-[38px] bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-              title="Shift+Enterで送信"
-            >
-              {isRegenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : '更新'}
-            </button>
-
-            <button
-              onClick={onUndo}
-              disabled={!hasHistory || isRegenerating}
-              className="px-3 py-2 h-[38px] bg-gray-700 hover:bg-gray-600 text-white rounded-l text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap border-r border-gray-600"
-              title="ひとつ前の状態に戻す"
-            >
-              <Undo className="w-3 h-3" />
-              戻す
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!hasRedoHistory || isRegenerating}
-              className="px-3 py-2 h-[38px] bg-gray-700 hover:bg-gray-600 text-white rounded-r text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap"
-              title="やり直す (戻した操作を取り消す)"
-            >
-              <Redo className="w-3 h-3" />
-              進む
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
