@@ -600,12 +600,14 @@ export const generateSwipeScreenImage = async (
     Create a high-quality vertical image (9:16 aspect ratio) for a mobile landing page.
     
     ${isMangaStyle ? `
-    **STYLE: 4-PANEL MANGA / COMIC STRIP (Japanese Style)**
-    - **LAYOUT**: The image MUST be divided into 4 distinct panels (2x2 grid or 4 vertical stacked panels).
+    **STYLE: 4-PANEL VERTICAL MANGA (Webtoon Style)**
+    - **LAYOUT**: The image MUST be divided into **4 VERTICAL PANELS STACKED (1 Column, 4 Rows)**.
+    - **ORDER**: Panel 1 (Top) -> Panel 2 -> Panel 3 -> Panel 4 (Bottom).
+    - **READING DIRECTION**: Top to Bottom (Standard Webtoon format).
     - **CONTENT**: Create a sequence of 4 scenes as described in the Visual Description.
     - **STYLE**: High-quality anime/manga art style.
     - **NO TEXT**: Do not include speech bubbles or text inside the panels.
-    - **BORDERS**: Clear black or white borders between panels.
+    - **BORDERS**: Clear horizontal borders between panels.
     ` : `
     **STYLE: Professional Mobile App / Landing Page Design**
     - Modern, clean, and high-impact visual.
