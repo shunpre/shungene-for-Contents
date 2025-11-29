@@ -299,12 +299,12 @@ export const generateSwipeLP = async (
     ${isMangaMode ? '**「読者が主人公に感情移入してしまう」** マンガ風スワイプLPの構成案（全8〜20枚程度）' : '**「つい最後まで見てしまう」** スワイプLPの構成案（全8〜20枚程度で、最適な枚数）'}を作成してください。
 
     ${isMangaMode ? `
-    **【重要】マンガモードの特別指示:**
-    - **形式**: 各スライドは**「4コマ漫画（または4分割のコマ割り）」**として構成してください。
-    - **構成**: 1ページ（1スライド）の中に「起・承・転・結」や「状況・展開・オチ・引き」の4つの展開を入れてください。
-    - **mainCopy**: ここには4コマ全体のセリフをまとめて書いてください（例：「コマ1：〇〇\nコマ2：〇〇...」）。
-    - **visualDescription**: 「4コマ漫画のレイアウト。1コマ目は...、2コマ目は...」と、4つのコマの内容を具体的に指示してください。
-    - **枚数**: 全3〜5枚（合計12〜20コマ）で完結させてください。
+    **【重要】マンガモードの特別指示（ハイブリッド構成）:**
+    - **構成**: 「マンガで教育」→「商品セールス」という流れを作ってください。
+    - **前半（1〜3枚目）**: **「visualStyle: 'manga'」**を指定してください。読者の悩みや共感を呼ぶストーリーを「4コマ漫画」形式で描いてください。
+    - **後半（4〜5枚目）**: **「visualStyle: 'standard'」**を指定してください。解決策としての「商品」を魅力的に見せる、通常のLPデザインに切り替えてください。
+    - **mainCopy**: マンガ部分は「セリフ」、セールス部分は「キャッチコピー」にしてください。
+    - **枚数**: 全4〜6枚程度で、マンガからセールスへ自然につなげてください。
     ` : `
     ${targetSegment === 'latent' ? `
     **【重要】潜在層向けのアプローチ:**
@@ -594,10 +594,12 @@ export const generateSwipeScreenImage = async (
   const designRefImages = imageFiles.filter(f => f.assetType === 'design_reference');
   const otherImages = imageFiles.filter(f => !f.assetType || f.assetType === 'other');
 
+  const isMangaStyle = screen.visualStyle === 'manga' || (!screen.visualStyle && isMangaMode);
+
   const prompt = `
     Create a high-quality vertical image (9:16 aspect ratio) for a mobile landing page.
     
-    ${isMangaMode ? `
+    ${isMangaStyle ? `
     **STYLE: 4-PANEL MANGA / COMIC STRIP (Japanese Style)**
     - **LAYOUT**: The image MUST be divided into 4 distinct panels (2x2 grid or 4 vertical stacked panels).
     - **CONTENT**: Create a sequence of 4 scenes as described in the Visual Description.

@@ -44,6 +44,7 @@ export interface SwipeScreen {
   imageData?: string; // Base64 encoded final image (Populated in the third phase)
   history?: SwipeScreenHistory[]; // History for undo functionality
   redoHistory?: SwipeScreenHistory[]; // History for redo functionality
+  visualStyle?: 'manga' | 'standard'; // Style for this specific screen
 }
 
 export interface SwipeLP {
