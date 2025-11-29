@@ -761,4 +761,3 @@ function sanitizeCopy(text: string): string {
 
   return sanitized;
 }
-}
