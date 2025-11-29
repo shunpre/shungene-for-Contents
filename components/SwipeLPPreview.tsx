@@ -197,12 +197,12 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
         )}
       </div>
 
-      {/* 2. Storyboard Navigation */}
+      {/* 2. Slide Navigation */}
       <div>
         <div className="flex justify-between items-end mb-3">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
             <Layout className="w-4 h-4" />
-            ストーリーボード (構成順)
+            スライド一覧 (Slide List)
           </h3>
           <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
@@ -212,13 +212,13 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
                 }`}
             >
               <StickyNote className="w-3 h-3" />
-              コピー
+              シナリオ & コピー
             </button>
             <button
-              onClick={() => (visualsComplete || isGeneratingVisuals) && setActiveTab('visual')}
-              disabled={!visualsComplete && !isGeneratingVisuals}
+              onClick={() => setActiveTab('visual')}
+              disabled={false}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'visual' ? 'bg-white text-purple-600 shadow-sm' :
-                'text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                'text-gray-500 hover:text-gray-700'
                 }`}
             >
               <ImageIcon className="w-3 h-3" />
@@ -241,6 +241,14 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
                 else borderClass = 'border-indigo-600 bg-indigo-50 shadow-md transform -translate-y-1';
               } else if (isLocked) {
                 borderClass = 'border-gray-100 bg-gray-50 opacity-60';
+              }
+
+              // Determine preview text
+              let previewText = "";
+              if (screen.mangaScript) {
+                previewText = `[Manga] ${screen.mangaScript.panel1.situation.substring(0, 30)}...`;
+              } else {
+                previewText = screen.mainCopy ? screen.mainCopy.substring(0, 30) + "..." : "（テキストなし）";
               }
 
               return (
@@ -269,13 +277,13 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
                         Design Ready...
                       </p>
                     ) : (
-                      <p className="text-[9px] text-gray-400 font-mono text-left w-full h-full p-1">
-                        {(screen.visualDescription || "").substring(0, 40)}...
+                      <p className="text-[9px] text-gray-400 font-mono text-left w-full h-full p-1 leading-tight">
+                        {previewText}
                       </p>
                     )}
                   </div>
                   <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight h-8 w-full">
-                    {screen.title || "（タイトルなし）"}
+                    {screen.visualStyle === 'manga' ? 'マンガパート' : (screen.title || "（タイトルなし）")}
                   </p>
                 </button>
               )
@@ -347,6 +355,18 @@ const ScreenEditor: React.FC<{
     onUpdate({ ...screen, [field]: value });
   };
 
+  const handleMangaPanelChange = (panelKey: 'panel1' | 'panel2' | 'panel3' | 'panel4', field: 'situation' | 'dialogue', value: string) => {
+    if (!screen.mangaScript) return;
+    const updatedScript = {
+      ...screen.mangaScript,
+      [panelKey]: {
+        ...screen.mangaScript[panelKey],
+        [field]: value
+      }
+    };
+    onUpdate({ ...screen, mangaScript: updatedScript });
+  };
+
   const handleRegenerateSubmit = async () => {
     if (!regenerateInput.trim()) return;
     setIsRegenerating(true);
@@ -361,64 +381,78 @@ const ScreenEditor: React.FC<{
     }
   };
 
+  const isManga = screen.visualStyle === 'manga' && !!screen.mangaScript;
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col animate-in slide-in-from-right-4 duration-500">
       <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <StickyNote className="w-4 h-4 text-indigo-600" />
-          <h3 className="font-bold text-gray-900">Scene {screen.order}: コピー & 構成の編集</h3>
+          <h3 className="font-bold text-gray-900">Scene {screen.order}: {isManga ? 'マンガシナリオ編集' : 'コピー編集'}</h3>
         </div>
         <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
-          役割: {screen.type}
+          Type: {screen.type}
         </span>
       </div>
 
       <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-        {/* Main Content Fields */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">キャッチコピー (Title)</label>
-            <input
-              type="text"
-              value={screen.title || ''} // Default value
-              onChange={(e) => handleTextChange('title', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold text-lg"
-              placeholder="読者の目を引く短い見出し"
-            />
+        {isManga ? (
+          // MANGA SCRIPT EDITOR
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-800 mb-4">
+              💡 4コマ漫画のシナリオを編集します。ここでの変更は画像生成プロンプトに反映されます。
+            </div>
+            {['panel1', 'panel2', 'panel3', 'panel4'].map((panelKey, i) => (
+              <div key={panelKey} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">コマ {i + 1}</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">状況 (Situation)</label>
+                    <textarea
+                      rows={2}
+                      value={screen.mangaScript?.[panelKey as any]?.situation || ''}
+                      onChange={(e) => handleMangaPanelChange(panelKey as any, 'situation', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">セリフ (Dialogue)</label>
+                    <input
+                      type="text"
+                      value={screen.mangaScript?.[panelKey as any]?.dialogue || ''}
+                      onChange={(e) => handleMangaPanelChange(panelKey as any, 'dialogue', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm font-bold text-blue-900"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">本文コピー (Main Text)</label>
-            <textarea
-              rows={5}
-              value={screen.mainCopy || ''} // Default value
-              onChange={(e) => handleTextChange('mainCopy', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm leading-relaxed"
-              placeholder="ストーリーを語る本文"
-            />
+        ) : (
+          // STANDARD COPY EDITOR
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">キャッチコピー (Title)</label>
+              <input
+                type="text"
+                value={screen.title || ''} // Default value
+                onChange={(e) => handleTextChange('title', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold text-lg"
+                placeholder="読者の目を引く短い見出し"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">本文コピー (Main Text)</label>
+              <textarea
+                rows={5}
+                value={screen.mainCopy || ''} // Default value
+                onChange={(e) => handleTextChange('mainCopy', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm leading-relaxed"
+                placeholder="ストーリーを語る本文"
+              />
+            </div>
           </div>
-        </div>
-
-        <div className="border-t border-gray-100 my-2"></div>
-
-        {/* AI Instructions Fields */}
-        <div className="space-y-4 bg-indigo-50/50 p-5 rounded-lg border border-indigo-100">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-indigo-500" />
-            <h4 className="text-sm font-bold text-indigo-900">クリエイティブ指示 (AIへのメモ)</h4>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-indigo-800 uppercase tracking-wider mb-1 flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> 画像イメージ (Visual Description)
-            </label>
-            <textarea
-              rows={3}
-              value={screen.visualDescription || ''} // Default value
-              onChange={(e) => handleTextChange('visualDescription', e.target.value)}
-              className="w-full p-2 border border-indigo-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs bg-white text-gray-700"
-            />
-            <p className="text-[10px] text-indigo-600 mt-1">※ グラフ、図解、No.1バッジなどの視覚要素も含めて記述してください。</p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* AI Regenerate Footer */}
@@ -686,7 +720,7 @@ const PhoneMockup: React.FC<{
             <div className="absolute inset-0 w-full h-full bg-gray-200 flex flex-col items-center justify-center text-center p-6 z-0">
               <ImageIcon className="w-16 h-16 text-gray-400 mb-4 opacity-50" />
               <p className="text-[10px] text-gray-500 font-medium line-clamp-4 max-w-[80%] opacity-70">
-                {screen?.visualDescription || "背景画像エリア"}
+                {screen?.designSpec?.visualAssetInstruction || "背景画像エリア (Design Spec)"}
               </p>
               {/* Dark Overlay for text readability in wireframe */}
               <div className="absolute inset-0 bg-black/40"></div>

@@ -53,7 +53,14 @@ const PRODUCT_PROFILE_SCHEMA: Schema = {
       description: "製品がどのように課題を解決するか。"
     },
     uniqueValueProposition: { type: Type.STRING, description: "購入すべき最も説得力のある理由（UVP）。" },
-    toneOfVoice: { type: Type.STRING, description: "検出または提案されるトーン＆マナー（例：プロフェッショナル、親しみやすい、緊急性が高い）。" }
+    toneOfVoice: { type: Type.STRING, description: "検出または提案されるトーン＆マナー（例：プロフェッショナル、親しみやすい、緊急性が高い）。" },
+    // Enhanced Marketing Fields
+    price: { type: Type.STRING, description: "価格情報（通常価格、税込/税抜など）。不明な場合は空文字。" },
+    discountOffer: { type: Type.STRING, description: "割引、特典、キャンペーン情報（例：初回50%OFF、送料無料）。不明な場合は空文字。" },
+    authority: { type: Type.STRING, description: "権威性を示す要素（例：医師推奨、No.1獲得、受賞歴、メディア掲載）。不明な場合は空文字。" },
+    scarcity: { type: Type.STRING, description: "限定性や緊急性（例：残りわずか、期間限定、先着順）。不明な場合は空文字。" },
+    uniqueness: { type: Type.STRING, description: "他社にはない独自性（例：特許取得、世界初、独自成分）。不明な場合は空文字。" },
+    trackRecord: { type: Type.STRING, description: "実績（例：累計販売数、満足度、リピート率）。不明な場合は空文字。" }
   },
   required: ["productName", "category", "targetAudience", "painPoints", "solutions", "uniqueValueProposition", "toneOfVoice"]
 };
@@ -78,17 +85,64 @@ const SWIPE_SCREEN_SCHEMA: Schema = {
     },
     designSpec: {
       type: Type.OBJECT,
-      description: "このスライドの具体的なデザイン指示書。visualStyleに基づいて作成すること。",
+      description: "このスライドの具体的なデザイン指示書。visualStyleが'standard'の場合に必須。",
       properties: {
-        layoutBlueprint: { type: Type.STRING, description: "9:16の縦長画面における具体的な要素配置（例：背景全面に画像、中央に白文字でキャッチコピー）。マンガモードの場合は「1列4行の4コマ配置」など。" },
+        layoutBlueprint: { type: Type.STRING, description: "9:16の縦長画面における具体的な要素配置（例：背景全面に画像、中央に白文字でキャッチコピー）。" },
         visualAssetInstruction: { type: Type.STRING, description: "アップロードされたファイル名を参照し、どの画像を使用するか、または新規撮影/生成の具体的な指示。" },
         typographyInstruction: { type: Type.STRING, description: "フォントの太さ、サイズ、色、強調箇所の指示。" },
         colorPalette: { type: Type.STRING, description: "使用するカラーコードや配色の詳細。" }
       },
       required: ["layoutBlueprint", "visualAssetInstruction", "typographyInstruction", "colorPalette"]
+    },
+    mangaScript: {
+      type: Type.OBJECT,
+      description: "このスライドのマンガシナリオ（4コマ構成）。visualStyleが'manga'の場合に必須。",
+      properties: {
+        panel1: {
+          type: Type.OBJECT,
+          properties: {
+            panelNumber: { type: Type.INTEGER },
+            situation: { type: Type.STRING, description: "1コマ目の状況・背景・行動の描写" },
+            dialogue: { type: Type.STRING, description: "1コマ目のセリフ" },
+            characterExpression: { type: Type.STRING, description: "1コマ目の表情" }
+          },
+          required: ["panelNumber", "situation", "dialogue"]
+        },
+        panel2: {
+          type: Type.OBJECT,
+          properties: {
+            panelNumber: { type: Type.INTEGER },
+            situation: { type: Type.STRING, description: "2コマ目の状況・背景・行動の描写" },
+            dialogue: { type: Type.STRING, description: "2コマ目のセリフ" },
+            characterExpression: { type: Type.STRING, description: "2コマ目の表情" }
+          },
+          required: ["panelNumber", "situation", "dialogue"]
+        },
+        panel3: {
+          type: Type.OBJECT,
+          properties: {
+            panelNumber: { type: Type.INTEGER },
+            situation: { type: Type.STRING, description: "3コマ目の状況・背景・行動の描写" },
+            dialogue: { type: Type.STRING, description: "3コマ目のセリフ" },
+            characterExpression: { type: Type.STRING, description: "3コマ目の表情" }
+          },
+          required: ["panelNumber", "situation", "dialogue"]
+        },
+        panel4: {
+          type: Type.OBJECT,
+          properties: {
+            panelNumber: { type: Type.INTEGER },
+            situation: { type: Type.STRING, description: "4コマ目の状況・背景・行動の描写" },
+            dialogue: { type: Type.STRING, description: "4コマ目のセリフ" },
+            characterExpression: { type: Type.STRING, description: "4コマ目の表情" }
+          },
+          required: ["panelNumber", "situation", "dialogue"]
+        }
+      },
+      required: ["panel1", "panel2", "panel3", "panel4"]
     }
   },
-  required: ["order", "type", "title", "mainCopy", "visualDescription", "designNote", "visualStyle", "designSpec"]
+  required: ["order", "type", "visualStyle"] // Removed title/mainCopy/visualDescription/designNote from required as they are optional in Manga Mode
 };
 
 const DESIGN_SPEC_SCHEMA: Schema = {
@@ -218,6 +272,14 @@ export const analyzeProductContext = async (
     1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
        - 特に**「商品分析資料」**として指定されたファイルがある場合は、その内容を最優先で分析の根拠としてください。
        - **「デザイン参考(トンマナ)」**として指定された画像がある場合は、その視覚的な雰囲気（色使い、フォントの印象、高級感/親しみやすさ等）を言語化し、「トーン & マナー」の分析に反映させてください。
+       - **【重要】マーケティング要素の抽出**: 以下の要素があれば必ず抽出してください。なければ空欄で構いません。
+         - **価格**: 通常価格、セット価格など。
+         - **オファー**: 割引率、特典、キャンペーン、保証（返金保証など）。
+         - **権威性**: 受賞歴、No.1実績、専門家の推薦、メディア掲載。
+         - **限定性**: 期間、個数、先着順などの制限。
+         - **独自性**: 特許、独自成分、世界初などの差別化要素。
+         - **実績**: 販売数、満足度、リピート率、導入社数。
+
     2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
     
     **重要: 情報が取得できない場合の対応**
@@ -308,40 +370,75 @@ export const generateSwipeLP = async (
   targetSegment: TargetSegment = 'latent',
   isMangaMode: boolean = false
 ): Promise<SwipeLP> => {
+  // 1. MANGA MODE PROMPT (Story & Marketing Hybrid)
+  const PROMPT_MANGA_MODE = `
+    **ROLE: Professional Webtoon (Vertical Scroll Manga) Scriptwriter & Marketer**
+    
+    **GOAL**: Create a highly engaging, story-driven "Manga LP" (8-20 slides) that seamlessly sells the product using the **PASTOR Formula**.
+    
+    **CRITICAL INSTRUCTION: UNIFIED BLUEPRINT GENERATION**
+    - **MANGA PART (Slides 1-[Mid])**:
+      - \`visualStyle\`: 'manga'
+      - **OUTPUT**: 
+        - Generate \`mangaScript\` (Panel 1-4 details).
+        - Generate \`designSpec\` (Describe the 4-panel layout and character style).
+      - **DO NOT** generate \`title\` or \`mainCopy\`. Leave them empty or null.
+      - **CONTENT**: Pure story (Problem, Agitation, Solution, Transformation).
+    
+    - **SALES PART (Slides [Mid]-[End])**:
+      - \`visualStyle\`: 'standard' (Hybrid)
+      - **OUTPUT**: 
+        - Generate \`designSpec\` (Detailed layout, visuals, typography).
+        - Generate \`mainCopy\` (Standard Marketing Copy).
+      - **DO NOT** generate \`mangaScript\`.
+      - **CONTENT**: Offer, Authority, Scarcity, Call to Action.
+      - **TONE**: Use standard, persuasive marketing copy (NOT dialogue). Clear, professional, and benefit-driven.
+    
+    **PASTOR FORMULA**:
+      1. **P (Problem)**: Protagonist's daily life & struggle.
+      2. **A (Agitation)**: The problem gets worse (Crisis).
+      3. **S (Solution)**: Discovery of the product.
+      4. **T (Transformation)**: Life after using the product (Happy Ending).
+      5. **O (Offer)**: Product details, price, authority, scarcity.
+      6. **R (Response)**: Call to Action.
+    
+    **OUTPUT SCHEMA**:
+    - Use the provided JSON schema.
+    - **ALWAYS generate \`designSpec\` for ALL slides.**
+    - For 'manga' slides, populate \`mangaScript\`.
+    - For 'standard' slides, populate \`mainCopy\`.
+  `;
+
+  // 2. STANDARD MODE PROMPT (Strictly Copy & Marketing)
+  const PROMPT_STANDARD_MODE = `
+    **ROLE: Top-tier Landing Page Copywriter & Art Director**
+    
+    **GOAL**: Create a high-converting Swipe LP (8-20 slides) based on the product profile.
+    
+    **CRITICAL INSTRUCTION: UNIFIED BLUEPRINT GENERATION**
+    - **ALL SLIDES**:
+      - \`visualStyle\`: 'standard'
+      - **OUTPUT**: 
+        - Generate \`mainCopy\` (Short, punchy copy).
+        - Generate detailed \`designSpec\` (Layout, Visuals, Typography, Color).
+      - **DO NOT** generate \`mangaScript\`.
+    
+    **STRUCTURE (PAS/AIDA)**:
+      1. **Problem**: "Are you struggling with...?"
+      2. **Agitation**: "If left alone, it becomes..."
+      3. **Solution**: "Here is the Product!"
+      4. **Benefit/Proof**: "Why it works."
+      5. **Offer**: "Buy now."
+    
+    **OUTPUT SCHEMA**:
+    - **ALWAYS generate \`designSpec\` for ALL slides.**
+    - \`mainCopy\`: Short, punchy copy.
+  `;
+
+  const selectedPrompt = isMangaMode ? PROMPT_MANGA_MODE : PROMPT_STANDARD_MODE;
+
   const prompt = `
-    ${JAPANESE_COPYWRITER_ROLE}
-
-    あなたは${isMangaMode ? '**「Webtoon（縦読みマンガ）の原作脚本家」**' : `**「${targetSegment === 'latent' ? '潜在層 (まだニーズに気づいていない)' : '顕在層 (比較検討中・指名検索)'}」**の心を掴んで離さないスワイプLPの構成作家`}です。
-    以下の製品プロファイルと、ガイドラインに基づいて、
-    ${isMangaMode ? '**「読者が主人公に感情移入してしまう」** マンガ風スワイプLPの構成案（全8〜20枚程度）' : '**「つい最後まで見てしまう」** スワイプLPの構成案（全8〜20枚程度で、最適な枚数）'}を作成してください。
-
-    ${isMangaMode ? `
-    **【重要】マンガモードの特別指示（ハイブリッド構成）:**
-    - **構成**: 「マンガで教育（ストーリー）」→「ブリッジ（気づき）」→「商品セールス（解決策）」という流れを作ってください。
-    - **前半（マンガパート: 全体の40-50%）**: **「visualStyle: 'manga'」**を指定。読者の悩みや共感を呼ぶストーリーを「4コマ漫画」形式で描いてください。
-    - **中盤（ブリッジパート: 全体の10-20%）**: **「visualStyle: 'manga'」**または**「visualStyle: 'standard'」**。マンガの主人公が商品に出会う、または解決策に気づくシーン。
-    - **後半（セールスパート: 全体の30-40%）**: **「visualStyle: 'standard'」**を指定。解決策としての「商品」を魅力的に見せる、通常のLPデザインに切り替えてください。
-    - **mainCharacterDesign**: マンガの主人公の具体的な外見（例：30代女性、茶髪ボブ、オフィスカジュアル、困り顔が多い）を定義してください。
-    - **mainCopy**: マンガ部分は「セリフ」、セールス部分は「キャッチコピー」にしてください。
-    - **visualDescription**: セリフの内容（悲しみ、喜び、驚き）が**「表情」や「行動」**として視覚的に伝わるように、コマごとの描写を詳細に書いてください。
-    - **枚数**: **全8〜20枚**の範囲で、ストーリーが完結し、かつセールスも十分に行える最適な枚数にしてください（6枚で終わらせないこと）。
-    - **designSpec**: 各スライドの \`visualStyle\` に合わせて、適切なデザイン指示（layoutBlueprintなど）を必ず生成してください。
-      - **'manga'の場合**: layoutBlueprintは「1列4行の縦積み（4コマ漫画）」とし、visualAssetInstructionは「AI生成によるマンガイラスト」としてください。
-      - **'standard'の場合**: layoutBlueprintは「フルスクリーン・オーバーレイ」とし、visualAssetInstructionは「高品質な写真」としてください。
-    ` : `
-    ${targetSegment === 'latent' ? `
-    **【重要】潜在層向けのアプローチ:**
-    - **「売り込み」は厳禁**です。まずは「共感」と「気づき」から入ってください。
-    - 1枚目〜3枚目で「あ、これ私のことだ」と思わせる**自分事化**を徹底してください。
-    - 商品の登場は中盤以降にしてください。まずは「なぜ今のままではダメなのか？」を伝えてください。
-    ` : `
-    **【重要】顕在層向けのアプローチ:**
-    - **「結論（ベネフィット）」**から入ってください。
-    - **1枚目に必ず「商品名」と「オファー（キャンペーンや特典）」を明記してください。**
-    - 1枚目から「この商品が他とどう違うのか」を明確に示してください。
-    - 比較、権威性、実績、オファーなど、**「今すぐ選ぶ理由」**を畳み掛けてください。
-    `}
-    `}
+    ${selectedPrompt}
 
     --- 製品プロファイル ---
     製品名: ${profile.productName}
@@ -350,7 +447,13 @@ export const generateSwipeLP = async (
     提供価値(UVP): ${profile.uniqueValueProposition}
     悩み: ${profile.painPoints.join(', ')}
     解決策: ${profile.solutions.join(', ')}
-    トーン: ${profile.toneOfVoice}
+    トーン: ${isMangaMode ? '親しみやすい、感情豊かなキャラクター口調（タメ口や自然な会話）' : profile.toneOfVoice}
+    価格: ${profile.price || ''}
+    オファー: ${profile.discountOffer || ''}
+    権威性: ${profile.authority || ''}
+    限定性: ${profile.scarcity || ''}
+    独自性: ${profile.uniqueness || ''}
+    実績: ${profile.trackRecord || ''}
 
     --- 制作ガイドライン(厳守) ---
     ${SWIPE_LP_GUIDELINES}
@@ -358,8 +461,8 @@ export const generateSwipeLP = async (
     重要指示：
     1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット（商品名・オファー必須）'} で惹きつけてください。
     2. **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
-    3. **ストーリー性**: ${targetSegment === 'latent' ? '「悩み共感」→「原因の気づき」→「解決策の提示」→「商品の登場」' : '「結論」→「証拠」→「他社比較」→「オファー」'} という流れを意識してください。
-    4. **ビジュアル指示**: visualDescriptionには、単なる写真だけでなく、「図解」「比較グラフ」「チェックリストのデザイン」など、視覚的に分かりやすい要素を具体的に指示してください。**特に、mainCopyの内容（感情、状況、数値）を視覚的に補完・強調する描写にしてください。**
+    3. **枚数**: **全8〜20枚**の範囲で、最適な枚数にしてください（6枚で終わらせないこと）。
+    4. **visualStyle**: ${isMangaMode ? "基本は 'manga' ですが、商品スペックやオファーの強調が必要なスライドのみ 'standard' に切り替えても構いません。" : "全て 'standard' にしてください。"}
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
@@ -395,21 +498,40 @@ export const generateSwipeLP = async (
     }
 
     // Default values for screen fields to prevent crashes
-    parsed.screens = parsed.screens.map((s, idx) => ({
-      order: s.order || idx + 1,
-      type: s.type || 'benefit',
-      title: s.title || 'タイトル未設定',
-      mainCopy: s.mainCopy || '本文が生成されませんでした。',
-      visualDescription: s.visualDescription || '製品の魅力的な画像',
-      designNote: s.designNote || '',
-      visualStyle: s.visualStyle || (isMangaMode ? 'manga' : 'standard'),
-      designSpec: s.designSpec || {
-        layoutBlueprint: isMangaMode ? '1列4行の縦積み（4コマ漫画）' : 'フルスクリーン・オーバーレイ',
-        visualAssetInstruction: 'AI生成',
-        typographyInstruction: '標準',
-        colorPalette: '#FFFFFF'
+    parsed.screens = parsed.screens.map((s, idx) => {
+      // Backfill mainCopy from mangaScript if it's a manga slide
+      let finalMainCopy = s.mainCopy;
+      if (s.visualStyle === 'manga' && s.mangaScript) {
+        // Create a summary script from the panels
+        const scriptSummary = [
+          `1: ${s.mangaScript.panel1.situation}「${s.mangaScript.panel1.dialogue}」`,
+          `2: ${s.mangaScript.panel2.situation}「${s.mangaScript.panel2.dialogue}」`,
+          `3: ${s.mangaScript.panel3.situation}「${s.mangaScript.panel3.dialogue}」`,
+          `4: ${s.mangaScript.panel4.situation}「${s.mangaScript.panel4.dialogue}」`
+        ].join('\n');
+
+        // If mainCopy is empty or default, use the script summary
+        if (!s.mainCopy || s.mainCopy === '本文が生成されませんでした。') {
+          finalMainCopy = scriptSummary;
+        }
       }
-    }));
+
+      return {
+        order: s.order || idx + 1,
+        type: s.type || 'benefit',
+        title: s.title || 'タイトル未設定',
+        mainCopy: finalMainCopy || '本文が生成されませんでした。',
+        designNote: s.designNote || '',
+        visualStyle: s.visualStyle || (isMangaMode ? 'manga' : 'standard'),
+        designSpec: s.designSpec || {
+          layoutBlueprint: isMangaMode ? '1列4行の縦積み（4コマ漫画）' : 'フルスクリーン・オーバーレイ',
+          visualAssetInstruction: 'AI生成',
+          typographyInstruction: '標準',
+          colorPalette: '#FFFFFF'
+        },
+        mangaScript: s.mangaScript // Ensure mangaScript is passed through
+      };
+    });
 
     return parsed;
   } catch (error) {
@@ -439,7 +561,6 @@ UVP: ${profile.uniqueValueProposition}
 --- 現在のスライド内容-- -
   タイトル: ${currentScreen.title}
 本文: ${currentScreen.mainCopy}
-画像の指示: ${currentScreen.visualDescription}
 役割: ${currentScreen.type}
 
 --- ユーザーからの修正指示-- -
@@ -542,9 +663,68 @@ export const generateSwipeScreenImage = async (
 ): Promise<string> => {
   const ai = getAI(apiKey);
 
-  // Construct prompt based on design spec
-  const spec = screen.designSpec;
-  if (!spec) throw new Error("Design Spec is missing");
+  // Determine the effective style
+  const isMangaStyle = screen.visualStyle === 'manga';
+  const isHybridStyle = isMangaMode && screen.visualStyle === 'standard';
+
+  let prompt = "";
+
+  if (isMangaStyle && screen.mangaScript) {
+    // --- MANGA STYLE GENERATION (Using Manga Script) ---
+    prompt = `
+      **ROLE: Professional Manga Artist**
+      **GOAL**: Create a high-quality 4-panel manga page (vertical strip) based on the provided script.
+      
+      **CHARACTER DESIGN (Consistency is Key)**:
+      ${mainCharacterDesign ? `Main Character: ${mainCharacterDesign}` : "Create a relatable protagonist."}
+      
+      **SCRIPT**:
+      - Panel 1: ${screen.mangaScript.panel1.situation} (Dialogue: ${screen.mangaScript.panel1.dialogue})
+      - Panel 2: ${screen.mangaScript.panel2.situation} (Dialogue: ${screen.mangaScript.panel2.dialogue})
+      - Panel 3: ${screen.mangaScript.panel3.situation} (Dialogue: ${screen.mangaScript.panel3.dialogue})
+      - Panel 4: ${screen.mangaScript.panel4.situation} (Dialogue: ${screen.mangaScript.panel4.dialogue})
+      
+      **VISUAL STYLE**:
+      - Japanese Webtoon style (Vertical scroll).
+      - Clean lines, expressive faces.
+      - **MUST INCLUDE SPEECH BUBBLES** with the Japanese dialogue provided in the script.
+      - Layout: 4 distinct panels arranged vertically.
+    `;
+  } else {
+    // --- STANDARD / HYBRID STYLE GENERATION (Using Design Spec) ---
+    const designSpec = screen.designSpec || {
+      layoutBlueprint: 'Full screen overlay',
+      visualAssetInstruction: 'High quality photo',
+      typographyInstruction: 'Standard',
+      colorPalette: 'Brand colors'
+    };
+
+    prompt = `
+      **ROLE: Professional Graphic Designer & Photographer**
+      **GOAL**: Create a high-converting Landing Page slide (9:16 Vertical).
+      
+      **DESIGN SPECIFICATION**:
+      - **Layout**: ${designSpec.layoutBlueprint}
+      - **Visuals**: ${designSpec.visualAssetInstruction}
+      - **Typography**: ${designSpec.typographyInstruction}
+      - **Colors**: ${designSpec.colorPalette}
+      
+      **CONTENT**:
+      - **Main Copy**: "${screen.mainCopy}" (Ensure text is legible)
+      
+      ${isHybridStyle ? `
+      **HYBRID STYLE INSTRUCTION (CRITICAL)**:
+      - **Style**: 80% Realism (Product/Background) + 20% Anime (Character Overlay).
+      - **Composition**: Show the REAL product or realistic result background. Overlay the Anime Character (from Manga part) as a "Navigator" or "Reactor" in the corner or side.
+      - **Character**: ${mainCharacterDesign || "Consistent with manga part"}.
+      - **Goal**: Bridge the gap between the manga story and the real product offer.
+      ` : `
+      **STYLE**:
+      - High-end commercial photography or premium 3D graphics.
+      - "Instagrammable" and trustworthy.
+      `}
+    `;
+  }
 
   // Filter for image files to use as reference/composition
   const imageFiles = files.filter(f => f.mimeType?.startsWith('image/'));
@@ -556,93 +736,41 @@ export const generateSwipeScreenImage = async (
   const designRefImages = imageFiles.filter(f => f.assetType === 'design_reference');
   const otherImages = imageFiles.filter(f => !f.assetType || f.assetType === 'other');
 
-  const isMangaStyle = screen.visualStyle === 'manga' || (!screen.visualStyle && isMangaMode);
-
-  const prompt = `
-  ** CRITICAL INSTRUCTION: STRICTLY FOLLOW THE DESIGN SPEC AND LAYOUT BLUEPRINT.**
-    You are a high - end UI / UX designer and illustrator.Your goal is to generate a final production - quality image that matches the design specification exactly.
-
-    ** Design Layout(BLUEPRINT):**
-  ${spec.layoutBlueprint}
-    * Render the image EXACTLY according to this layout.*
-
-    ** Visual Description(CONTENT):**
-  ${screen.visualDescription}
-    * Ensure the visual content matches this description and the context of the copy.*
-
-    ** Context(COPY):**
-  Title: ${screen.title}
-    Main Copy: ${screen.mainCopy}
-    * The image must support this message.If the copy mentions a specific emotion, object, or situation, it MUST be present in the image.*
-
-    ** Color Palette:**
-  ${spec.colorPalette}
-
-    ${isMangaStyle ? `
-    **STYLE: 4-PANEL VERTICAL MANGA (Webtoon Style)**
-    - **LAYOUT**: The image MUST be divided into **4 VERTICAL PANELS STACKED (1 Column, 4 Rows)**.
-    - **ORDER**: Panel 1 (Top) -> Panel 2 -> Panel 3 -> Panel 4 (Bottom).
-    - **READING DIRECTION**: Top to Bottom (Standard Webtoon format).
-    - **CONTENT**: Create a sequence of 4 scenes as described in the Visual Description.
-    - **CHARACTER CONSISTENCY**: **Use the following character design for the protagonist in ALL panels:**
-      - **${mainCharacterDesign || 'Consistent character appearance'}**
-      - Ensure the same person appears in all panels where applicable.
-    - **STYLE**: High-quality anime/manga art style.
-    - **TEXT/DIALOGUE**: **INCLUDE SPEECH BUBBLES** containing the dialogue specified in the "Main Copy".
-      - The text MUST be legible and placed naturally within speech bubbles.
-      - If the text is Japanese, ensure it is written vertically if appropriate for the style, or horizontally if better for Webtoon.
-    - **BORDERS**: Clear horizontal borders between panels.
-    ` : `
-    **STYLE: Professional Mobile App / Landing Page Design**
-    - Modern, clean, and high-impact visual.
-    - **REALISM**: If the description implies a photo, use a high-resolution, realistic style.
-    - **ILLUSTRATION**: If the description implies an illustration, use a modern, flat, corporate-friendly style.
-    - **NEGATIVE PROMPT (NO MANGA)**: Do NOT use anime, manga, or comic book styles unless explicitly requested in the visual description. Keep it professional and commercial.
-    `}
-
-    ** Important Constraints:**
-  - Aspect Ratio: 9: 16(Vertical)
-    - ** NO TEXT(Standard Mode Only) **: For standard LP slides, do not render text inside the image.
-    - ** TEXT ALLOWED(Manga Mode Only) **: For Manga slides, speech bubbles are REQUIRED.
-    - High quality, sharp details.
-
+  // Append Asset Composition Instructions
+  prompt += `
     ** ASSET COMPOSITION INSTRUCTIONS:**
 
-  ${productImages.length > 0 ? `
+    ${productImages.length > 0 ? `
     [PRODUCT IMAGES PROVIDED]
     - Use the provided product image(s) as the HERO element.
     - Composite naturally: Model holding it, placed on a table, or floating in a stylized background.
     - Ensure the product label/logo is visible if possible.
-    ` : ''
-    }
+    ` : ''}
 
     ${characterImages.length > 0 ? `
     [CHARACTER/MODEL IMAGES PROVIDED]
     - Use the provided character/model image(s) as the main subject.
     - Maintain their facial features and style.
     - If a product image is ALSO provided, show this character holding/using the product.
-    ` : ''
-    }
+    ` : ''}
 
     ${designRefImages.length > 0 ? `
     [DESIGN REFERENCE IMAGES PROVIDED]
     - **STYLE REFERENCE ONLY:** Use these images ONLY for visual style (color palette, lighting, mood, font vibe).
     - **DO NOT COPY THE CONTENT:** Do not reproduce the specific objects, people, or layout of the reference exactly.
     - **ADAPT TO PRODUCT:** Apply this style to the USER'S PRODUCT and content defined above.
-    ` : ''
-    }
+    ` : ''}
 
     ${voiceImages.length > 0 && screen.type === 'proof' ? `
     [USER VOICE IMAGES PROVIDED]
     - This is a "User Voice" / Testimonial screen.
     - Use the provided user image as a profile icon or standing figure next to their testimonial.
-    ` : ''
-    }
+    ` : ''}
 
     ** CRITICAL NEGATIVE PROMPT / CONSTRAINTS:**
     - ** Do NOT render a smartphone bezel, frame, device mockup, or hand holding a phone.**
-  - The image IS the screen content itself.It should be full - bleed.
-    - Do not produce low - density "blog" graphics.Make it look like a high - end magazine ad or infographic.
+    - The image IS the screen content itself. It should be full-bleed.
+    - Do not produce low-density "blog" graphics. Make it look like a high-end magazine ad or infographic.
   `;
 
   const parts: any[] = [{ text: prompt }];

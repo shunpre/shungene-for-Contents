@@ -172,6 +172,7 @@ const App: React.FC = () => {
         if (!currentScreens[i].imageData) {
           // Ensure designSpec exists (it should from the initial generation)
           if (!currentScreens[i].designSpec) {
+            // Fallback just in case, though it should be pre-generated now
             console.warn(`Screen ${i + 1} missing designSpec, using default.`);
             currentScreens[i].designSpec = {
               layoutBlueprint: isMangaMode ? '1列4行の縦積み（4コマ漫画）' : 'フルスクリーン・オーバーレイ',

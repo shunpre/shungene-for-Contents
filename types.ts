@@ -18,6 +18,13 @@ export interface ProductProfile {
   solutions: string[];
   uniqueValueProposition: string;
   toneOfVoice: string;
+  // Enhanced Marketing Fields
+  price?: string;
+  discountOffer?: string;
+  authority?: string;
+  scarcity?: string;
+  uniqueness?: string;
+  trackRecord?: string;
 }
 
 export interface DesignSpec {
@@ -33,18 +40,34 @@ export interface SwipeScreenHistory {
   timestamp: number;
 }
 
+export interface MangaPanel {
+  panelNumber: number;
+  situation: string; // Visual description of the scene
+  dialogue: string; // Character speech
+  characterExpression?: string; // e.g., "Crying", "Smiling"
+}
+
 export interface SwipeScreen {
   order: number;
   type: 'hook' | 'problem' | 'empathy' | 'solution' | 'benefit' | 'proof' | 'cta';
   title: string;
   mainCopy: string;
-  visualDescription: string;
-  designNote: string;
-  designSpec?: DesignSpec; // Populated in the second phase
-  imageData?: string; // Base64 encoded final image (Populated in the third phase)
+  designNote?: string;
+  visualStyle: 'manga' | 'standard';
+
+  // Polymorphic Fields
+  designSpec?: DesignSpec; // Required for 'standard' style
+  mangaScript?: {
+    panel1: MangaPanel;
+    panel2: MangaPanel;
+    panel3: MangaPanel;
+    panel4: MangaPanel;
+  }; // Required for 'manga' style
+
+  // App State
+  imageData?: string; // Base64 encoded final image
   history?: SwipeScreenHistory[]; // History for undo functionality
   redoHistory?: SwipeScreenHistory[]; // History for redo functionality
-  visualStyle?: 'manga' | 'standard'; // Style for this specific screen
 }
 
 export interface SwipeLP {
