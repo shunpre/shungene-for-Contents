@@ -70,9 +70,14 @@ const SWIPE_SCREEN_SCHEMA: Schema = {
     title: { type: Type.STRING, description: "スライドのメイン見出し（キャッチコピー）。短くインパクト重視。" },
     mainCopy: { type: Type.STRING, description: "詳細を伝える本文コピー。十分な情報量と説得力が必要。" },
     visualDescription: { type: Type.STRING, description: "このスライドで使用すべき画像や動画の具体的な指示・プロンプト。グラフや図解の指示も含む。" },
-    designNote: { type: Type.STRING, description: "デザイン上の注意点（文字配置、色使いなど）。" }
+    designNote: { type: Type.STRING, description: "デザイン上の注意点（文字配置、色使いなど）。" },
+    visualStyle: {
+      type: Type.STRING,
+      enum: ['manga', 'standard'],
+      description: "このスライドの表現スタイル。'manga'（4コマ漫画）か'standard'（通常LP）か。"
+    }
   },
-  required: ["order", "type", "title", "mainCopy", "visualDescription", "designNote"]
+  required: ["order", "type", "title", "mainCopy", "visualDescription", "designNote", "visualStyle"]
 };
 
 const DESIGN_SPEC_SCHEMA: Schema = {
@@ -382,7 +387,8 @@ export const generateSwipeLP = async (
       title: s.title || 'タイトル未設定',
       mainCopy: s.mainCopy || '本文が生成されませんでした。',
       visualDescription: s.visualDescription || '製品の魅力的な画像',
-      designNote: s.designNote || ''
+      designNote: s.designNote || '',
+      visualStyle: s.visualStyle || (isMangaMode ? 'manga' : 'standard')
     }));
 
     return parsed;
