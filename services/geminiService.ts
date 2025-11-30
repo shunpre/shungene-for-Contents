@@ -1,6 +1,8 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ProductProfile, UploadedFile, SwipeLP, SwipeScreen, DesignSpec } from '../types';
 
+const USE_MOCK_API = true; // Set to false to use real API
+
 // Helper to get a fresh client instance with the current API key
 const getAI = (apiKey: string) => new GoogleGenAI({ apiKey });
 
@@ -245,6 +247,30 @@ export const analyzeProductContext = async (
   apiKey: string,
   targetSegment: TargetSegment = 'latent'
 ): Promise<AnalysisResponse> => {
+  if (USE_MOCK_API) {
+    console.log("Using Mock API for analyzeProductContext");
+    await delay(1500); // Simulate network delay
+    return {
+      profile: {
+        productName: "Mock Diet Supplement",
+        category: "Health & Wellness",
+        targetAudience: "30-50代の健康意識が高い女性",
+        painPoints: ["最近痩せにくくなった", "運動する時間がない", "健康診断の結果が気になる"],
+        solutions: ["代謝サポート成分配合", "1日1粒飲むだけ", "医師監修の安心設計"],
+        uniqueValueProposition: "忙しいあなたでも続く、科学に基づいた代謝ケア",
+        toneOfVoice: "親しみやすく、かつ専門的な信頼感",
+        price: "初回980円",
+        discountOffer: "定期コース初回80%OFF",
+        authority: "累計販売100万袋突破",
+        scarcity: "毎月先着500名様限定",
+        uniqueness: "特許取得の独自酵素配合",
+        trackRecord: "リピート率92%"
+      },
+      summary: "モックデータによる分析結果です。",
+      hypothetical: false
+    };
+  }
+
   const ai = getAI(apiKey);
 
   const prompt = `
@@ -370,6 +396,68 @@ export const generateSwipeLP = async (
   targetSegment: TargetSegment = 'latent',
   isMangaMode: boolean = false
 ): Promise<SwipeLP> => {
+  if (USE_MOCK_API) {
+    console.log("Using Mock API for generateSwipeLP");
+    await delay(2000);
+    return {
+      concept: "Mock Concept: Easy Diet",
+      mainCharacterDesign: "30代女性、オフィスカジュアル、少し疲れた表情から笑顔へ",
+      screens: [
+        {
+          order: 1,
+          type: 'hook',
+          title: "まだ無理なダイエットしてる？",
+          mainCopy: "辛い食事制限も、激しい運動も、もう必要ありません。",
+          visualStyle: isMangaMode ? 'manga' : 'standard',
+          designSpec: {
+            layoutBlueprint: "インパクトのある問いかけ",
+            visualAssetInstruction: "驚いた表情の女性",
+            typographyInstruction: "太字で強調",
+            colorPalette: "#FF0000"
+          },
+          mangaScript: isMangaMode ? {
+            panel1: { panelNumber: 1, situation: "体重計に乗る", dialogue: "えっ…また増えてる？" },
+            panel2: { panelNumber: 2, situation: "鏡を見る", dialogue: "服がきつい…" },
+            panel3: { panelNumber: 3, situation: "ため息", dialogue: "もう何やってもダメなのかな" },
+            panel4: { panelNumber: 4, situation: "謎の光", dialogue: "諦めるのはまだ早い！" }
+          } : undefined
+        },
+        {
+          order: 2,
+          type: 'problem',
+          title: "その原因は「代謝」かも",
+          mainCopy: "年齢とともに下がる代謝。努力だけではどうにもなりません。",
+          visualStyle: isMangaMode ? 'manga' : 'standard',
+          designSpec: {
+            layoutBlueprint: "グラフで説明",
+            visualAssetInstruction: "代謝低下のグラフ",
+            typographyInstruction: "冷静なトーン",
+            colorPalette: "#0000FF"
+          },
+          mangaScript: isMangaMode ? {
+            panel1: { panelNumber: 1, situation: "解説キャラ登場", dialogue: "それは代謝のせいかも！" },
+            panel2: { panelNumber: 2, situation: "グラフを見せる", dialogue: "30代から急激に落ちるのよ" },
+            panel3: { panelNumber: 3, situation: "驚く主人公", dialogue: "知らなかった…" },
+            panel4: { panelNumber: 4, situation: "解決策の提示", dialogue: "だからこれを補うの" }
+          } : undefined
+        },
+        {
+          order: 3,
+          type: 'solution',
+          title: "そこで「Mock Supplement」",
+          mainCopy: "1日1粒で、あなたの「燃える力」をサポートします。",
+          visualStyle: 'standard', // Force standard for product
+          designSpec: {
+            layoutBlueprint: "商品パッケージ中心",
+            visualAssetInstruction: "商品画像",
+            typographyInstruction: "高級感",
+            colorPalette: "#Gold"
+          }
+        }
+      ]
+    };
+  }
+
   // 1. MANGA MODE PROMPT (Story & Marketing Hybrid)
   const PROMPT_MANGA_MODE = `
     **ROLE: Professional Webtoon (Vertical Scroll Manga) Scriptwriter & Marketer**
@@ -548,6 +636,16 @@ export const regenerateSwipeScreen = async (
   instruction: string,
   apiKey: string
 ): Promise<SwipeScreen> => {
+  if (USE_MOCK_API) {
+    console.log("Using Mock API for regenerateSwipeScreen");
+    await delay(1000);
+    return {
+      ...currentScreen,
+      mainCopy: currentScreen.mainCopy + " (修正済み)",
+      title: currentScreen.title + " (修正)"
+    };
+  }
+
   const prompt = `
     ${JAPANESE_COPYWRITER_ROLE}
 
@@ -607,6 +705,15 @@ export const regenerateDesignSpec = async (
   instruction: string,
   apiKey: string
 ): Promise<DesignSpec> => {
+  if (USE_MOCK_API) {
+    console.log("Using Mock API for regenerateDesignSpec");
+    await delay(1000);
+    return {
+      ...currentScreen.designSpec!,
+      layoutBlueprint: currentScreen.designSpec?.layoutBlueprint + " (デザイン修正済み)"
+    };
+  }
+
   const fileList = uploadedFiles.map(f => `- ${f.name} `).join('\n');
 
   const prompt = `
@@ -661,6 +768,13 @@ export const generateSwipeScreenImage = async (
   isMangaMode: boolean = false,
   mainCharacterDesign?: string
 ): Promise<string> => {
+  if (USE_MOCK_API) {
+    console.log("Using Mock API for generateSwipeScreenImage");
+    await delay(1500);
+    // Return a simple gray placeholder image base64
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
+  }
+
   const ai = getAI(apiKey);
 
   // Determine the effective style
