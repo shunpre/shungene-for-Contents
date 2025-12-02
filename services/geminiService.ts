@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ProductProfile, UploadedFile, SwipeLP, SwipeScreen, DesignSpec } from '../types';
 
-const USE_MOCK_API = false; // Set to false to use real API
+const USE_MOCK_API = true; // Set to false to use real API
 
 // Helper to get a fresh client instance with the current API key
 const getAI = (apiKey: string) => new GoogleGenAI({ apiKey });
