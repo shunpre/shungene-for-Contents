@@ -912,7 +912,7 @@ export const generateSwipeScreenImage = async (
   try {
     const ai = getAI(apiKey);
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'nano-banana-pro-preview',
+      model: 'gemini-3-pro-image-preview',
       contents: { parts: parts },
       config: {
         // imageConfig: {
