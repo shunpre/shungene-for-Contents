@@ -351,7 +351,7 @@ export const analyzeProductContext = async (
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp', // Updated model
+      model: 'gemini-3-pro-preview', // Updated model
       contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
       config: {
         temperature: 0.3,
