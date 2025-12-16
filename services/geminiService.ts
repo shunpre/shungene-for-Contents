@@ -399,9 +399,70 @@ export const generateSwipeLP = async (
   if (USE_MOCK_API) {
     console.log("Using Mock API for generateSwipeLP");
     await delay(2000);
+    if (targetSegment === 'manifest') {
+      return {
+        concept: "Mock Concept: High-End Supplement (Manifest)",
+        mainCharacterDesign: "日本人女性、自信に満ちた表情、プロフェッショナルな装い",
+        screens: [
+          {
+            order: 1,
+            type: 'cta',
+            title: "【50%OFF】代謝ケア革命",
+            mainCopy: "1日1粒で、理想のカラダへ。\n今だけ初回980円。",
+            visualStyle: 'standard',
+            designSpec: {
+              layoutBlueprint: "Impactful Poster Style: Full screen model holding product, big offer text overlay.",
+              visualAssetInstruction: "Japanese model holding the supplement bottle, smiling confidently. Overlay text: '50% OFF'.",
+              typographyInstruction: "Bold, Gold & Black, Luxury feel",
+              colorPalette: "#Gold #Black"
+            }
+          },
+          {
+            order: 2,
+            type: 'benefit',
+            title: "選ばれる3つの理由",
+            mainCopy: "1. 特許成分配合\n2. 医師監修\n3. 飲みやすさNo.1",
+            visualStyle: 'standard',
+            designSpec: {
+              layoutBlueprint: "3 Point list with icons",
+              visualAssetInstruction: "Icons representing Science, Doctor, and Happiness.",
+              typographyInstruction: "Clean sans-serif",
+              colorPalette: "#White #Blue"
+            }
+          },
+          {
+            order: 3,
+            type: 'proof',
+            title: "ユーザー満足度98%",
+            mainCopy: "「もっと早く出会いたかった」の声、続々。",
+            visualStyle: 'standard',
+            designSpec: {
+              layoutBlueprint: "Testimonial cards integration",
+              visualAssetInstruction: "Grid of smiling Japanese user faces.",
+              typographyInstruction: "Trustworthy",
+              colorPalette: "#Green"
+            }
+          },
+          {
+            order: 4,
+            type: 'cta',
+            title: "まずは1ヶ月試してください",
+            mainCopy: "返金保証付きだから安心。\n今すぐ申し込む。",
+            visualStyle: 'standard',
+            designSpec: {
+              layoutBlueprint: "Button focused layout",
+              visualAssetInstruction: "Product shot with 'Guarantee' badge.",
+              typographyInstruction: "Urgent red button",
+              colorPalette: "#Red"
+            }
+          }
+        ]
+      };
+    }
+
     return {
-      concept: "Mock Concept: Easy Diet",
-      mainCharacterDesign: "30代女性、オフィスカジュアル、少し疲れた表情から笑顔へ",
+      concept: "Mock Concept: Easy Diet (Latent)",
+      mainCharacterDesign: "30代日本人女性、オフィスカジュアル、少し疲れた表情から笑顔へ",
       screens: [
         {
           order: 1,
@@ -411,7 +472,7 @@ export const generateSwipeLP = async (
           visualStyle: isMangaMode ? 'manga' : 'standard',
           designSpec: {
             layoutBlueprint: "インパクトのある問いかけ",
-            visualAssetInstruction: "驚いた表情の女性",
+            visualAssetInstruction: "驚いた表情の日本人女性",
             typographyInstruction: "太字で強調",
             colorPalette: "#FF0000"
           },
