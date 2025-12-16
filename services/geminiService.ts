@@ -460,7 +460,7 @@ export const generateSwipeLP = async (
 
   // 1. MANGA MODE PROMPT (Story & Marketing Hybrid)
   const PROMPT_MANGA_MODE = `
-    **ROLE: Professional Webtoon (Vertical Scroll Manga) Scriptwriter & Marketer**
+    **ROLE: Professional Japanese Webtoon (Vertical Scroll Manga) Scriptwriter & Marketer**
     
     **GOAL**: Create a highly engaging, story-driven "Manga LP" (8-20 slides) that seamlessly sells the product using the **PASTOR Formula**.
     
@@ -471,7 +471,10 @@ export const generateSwipeLP = async (
         - Generate \`mangaScript\` (Panel 1-4 details).
         - Generate \`designSpec\` (Describe the 4-panel layout and character style).
       - **DO NOT** generate \`title\` or \`mainCopy\`. Leave them empty or null.
-      - **CONTENT**: Pure story (Problem, Agitation, Solution, Transformation).
+      - **CONTENT & TONE**: 
+        - **Natural Japanese Dialogue**: Use casual, conversational Japanese (e.g., "〜だよね", "〜かも？", "マジで？"). Avoid stiff textbook Japanese.
+        - **Story Flow**: Intro (Sympathy) -> Twist (Crisis) -> Discovery (Solution).
+        - **Character Dynamics**: Create a relatable protagonist with distinct emotional reactions.
     
     - **SALES PART (Slides [Mid]-[End])**:
       - \`visualStyle\`: 'standard' (Hybrid)
@@ -483,7 +486,7 @@ export const generateSwipeLP = async (
       - **TONE**: Use standard, persuasive marketing copy (NOT dialogue). Clear, professional, and benefit-driven.
     
     **PASTOR FORMULA**:
-      1. **P (Problem)**: Protagonist's daily life & struggle.
+      1. **P (Problem)**: Protagonist's daily life & struggle. (SHOW, DON'T TELL)
       2. **A (Agitation)**: The problem gets worse (Crisis).
       3. **S (Solution)**: Discovery of the product.
       4. **T (Transformation)**: Life after using the product (Happy Ending).
@@ -492,7 +495,7 @@ export const generateSwipeLP = async (
     
     **OUTPUT SCHEMA**:
     - Use the provided JSON schema.
-    - **ALWAYS generate \`designSpec\` for ALL slides.**
+    - **ALWAYS generate \`designSpec\` for ALL slides (including Manga).**
     - For 'manga' slides, populate \`mangaScript\`.
     - For 'standard' slides, populate \`mainCopy\`.
   `;
@@ -786,23 +789,36 @@ export const generateSwipeScreenImage = async (
   if (isMangaStyle && screen.mangaScript) {
     // --- MANGA STYLE GENERATION (Using Manga Script) ---
     prompt = `
-      **ROLE: Professional Manga Artist**
-      **GOAL**: Create a high-quality 4-panel manga page (vertical strip) based on the provided script.
+      **ROLE: Professional Manga Artist / Illustrator**
+      **GOAL**: Create a HIGH-QUALITY, 9:16 Vertical Color Manga Page (4 panels).
+
+      **CHARACTER CONSISTENCY IS ABSOLUTE PRIORITY**:
+      - **Character Design**: ${mainCharacterDesign ? mainCharacterDesign : "A relatable young Japanese woman, brown hair, casual office wear."}
+      - **IMPORTANT**: The character MUST look exactly the same in all 4 panels. Same hair, same face, same clothes.
+      - **Style**: Modern Japanese Webtoon style. Crisp lines, soft coloring, expressive anime-style faces.
       
-      **CHARACTER DESIGN (Consistency is Key)**:
-      ${mainCharacterDesign ? `Main Character: ${mainCharacterDesign}` : "Create a relatable protagonist."}
+      **PANEL STRUCTURE (Vertical Strip 9:16)**:
+      - The image MUST be vertically divided into 4 distinct panels.
       
-      **SCRIPT**:
-      - Panel 1: ${screen.mangaScript.panel1.situation} (Dialogue: ${screen.mangaScript.panel1.dialogue})
-      - Panel 2: ${screen.mangaScript.panel2.situation} (Dialogue: ${screen.mangaScript.panel2.dialogue})
-      - Panel 3: ${screen.mangaScript.panel3.situation} (Dialogue: ${screen.mangaScript.panel3.dialogue})
-      - Panel 4: ${screen.mangaScript.panel4.situation} (Dialogue: ${screen.mangaScript.panel4.dialogue})
+      **SCRIPT & SCENES**:
+      - Panel 1: ${screen.mangaScript.panel1.situation} (Action/Emotion)
+      - Panel 2: ${screen.mangaScript.panel2.situation} (Action/Emotion)
+      - Panel 3: ${screen.mangaScript.panel3.situation} (Action/Emotion)
+      - Panel 4: ${screen.mangaScript.panel4.situation} (Action/Emotion)
+
+      **TEXT / SPEECH BUBBLES**:
+      - **MUST INCLUDE JAPANESE SPEECH BUBBLES**.
+      - Panel 1 Text: "${screen.mangaScript.panel1.dialogue}"
+      - Panel 2 Text: "${screen.mangaScript.panel2.dialogue}"
+      - Panel 3 Text: "${screen.mangaScript.panel3.dialogue}"
+      - Panel 4 Text: "${screen.mangaScript.panel4.dialogue}"
+      - Ensure text is legible.
       
-      **VISUAL STYLE**:
-      - Japanese Webtoon style (Vertical scroll).
-      - Clean lines, expressive faces.
-      - **MUST INCLUDE SPEECH BUBBLES** with the Japanese dialogue provided in the script.
-      - Layout: 4 distinct panels arranged vertically.
+      **NEGATIVE PROMPT**:
+      - Do not change character hair color or style between panels.
+      - Do not merge panels.
+      - Do not use English text in bubbles.
+      - Do not produce low quality, sketchy, or unfinished art.
     `;
   } else {
     // --- STANDARD / HYBRID STYLE GENERATION (Using Design Spec) ---
@@ -915,10 +931,10 @@ export const generateSwipeScreenImage = async (
       model: 'gemini-3-pro-image-preview',
       contents: { parts: parts },
       config: {
-        // imageConfig: {
-        //   aspectRatio: "9:16",
-        //   imageSize: "1K"
-        // }
+        imageConfig: {
+          aspectRatio: "9:16",
+          imageSize: "1K"
+        }
       }
     }));
 
