@@ -5,7 +5,7 @@ import { UploadSection } from './components/UploadSection';
 import { AnalysisResult } from './components/AnalysisResult';
 import { SwipeLPPreview } from './components/SwipeLPPreview';
 import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment, SwipeScreenHistory } from './types';
-import { analyzeProductContext, generateSwipeLP, regenerateSwipeScreen, generateSingleDesignSpec, regenerateDesignSpec, generateSwipeScreenImage } from './services/geminiService';
+import { analyzeProductContext, generateSwipeLP, regenerateSwipeScreen, regenerateDesignSpec, generateSwipeScreenImage } from './services/geminiService';
 import { AlertCircle, Sparkles, Loader2, Key, Layers, PenTool, Image as ImageIcon } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -41,15 +41,9 @@ const App: React.FC = () => {
       setApiKey(process.env.GEMINI_API_KEY);
       setHasApiKey(true);
     }
-    // 3. Check Local Storage
+    // 3. No Local Storage Fallback (User request: Always ask for key)
     else {
-      const storedKey = localStorage.getItem('gemini_api_key');
-      if (storedKey) {
-        setApiKey(storedKey);
-        setHasApiKey(true);
-      } else {
-        setHasApiKey(false);
-      }
+      setHasApiKey(false);
     }
     setIsCheckingKey(false);
   };
@@ -66,13 +60,13 @@ const App: React.FC = () => {
 
   const handleSaveApiKey = () => {
     if (!inputApiKey.trim()) return;
-    localStorage.setItem('gemini_api_key', inputApiKey.trim());
+    // localStorage.setItem('gemini_api_key', inputApiKey.trim()); // Persistence disabled
     setApiKey(inputApiKey.trim());
     setHasApiKey(true);
   };
 
   const handleClearApiKey = () => {
-    localStorage.removeItem('gemini_api_key');
+    // localStorage.removeItem('gemini_api_key'); // Persistence disabled
     setApiKey('');
     setHasApiKey(false);
     setInputApiKey('');

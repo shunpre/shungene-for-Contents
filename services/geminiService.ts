@@ -513,6 +513,9 @@ export const generateSwipeLP = async (
         - Generate \`mainCopy\` (Short, punchy copy).
         - Generate detailed \`designSpec\` (Layout, Visuals, Typography, Color).
       - **DO NOT** generate \`mangaScript\`.
+      
+    **DEFAULT MODEL RULE**: 
+    - Unless explicitly instructed otherwise, **ALWAYS describe the model/persona as 'Japanese'** (Japanese woman/man).
     
     **STRUCTURE (PAS/AIDA)**:
       1. **Problem**: "Are you struggling with...?"
@@ -526,7 +529,48 @@ export const generateSwipeLP = async (
     - \`mainCopy\`: Short, punchy copy.
   `;
 
-  const selectedPrompt = isMangaMode ? PROMPT_MANGA_MODE : PROMPT_STANDARD_MODE;
+  // 3. MANIFEST MODE PROMPT (Poster-like, Product-First)
+  const PROMPT_MANIFEST_MODE = `
+    **ROLE: Luxury Advertising Creative Director & Direct Response Copywriter**
+    
+    **GOAL**: Create a high-impact, "Poster-Style" Swipe LP (8-15 slides) targeting "Manifest" (High Intent) users.
+    
+    **KEY STRATEGY**: 
+    - **NO FLUFF / NO STORIES**: Users already know what they want. Show them the PRODUCT and the OFFER immediately.
+    - **POSTER VISUALS**: Every slide should look like a standalone high-end advertisement poster. High information density but clean layout.
+    
+    **DEFAULT MODEL RULE**: 
+    - Unless explicitly instructed otherwise, **ALWAYS describe the model/persona as 'Japanese'** (Japanese woman/man).
+
+    **CRITICAL INSTRUCTION: FV (FIRST VIEW - Slide 1) RULE**:
+    - **Slide 1 MUST be a "Perfect Commercial Poster" containing ALL 4 elements**:
+      1. **PRODUCT IMAGE** (Hero shot)
+      2. **CATCH COPY** (Benefit-driven)
+      3. **HARD OFFER** (Price/Discount/Campaign - e.g. "50% OFF Now")
+      4. **MODEL/PERSONA** (Target user using/holding the product - **MUST BE JAPANESE**)
+    - **Design Spec for Slide 1**: "Magazine Cover-like layout. Full-screen model/background with product overlay. Big bold typography for Offer."
+    
+    **STRUCTURE (Direct Response)**:
+      1. **FV (Impact)**: Product + Offer + Catch + Model (ALL IN ONE).
+      2. **Benefit 1**: The #1 reason to buy.
+      3. **Benefit 2**: The #2 reason to buy.
+      4. **Proof/Authority**: No.1 Badge, Doctor recommendation, or Testimonial.
+      5. **Comparison/USP**: Why this product > Others.
+      6. **Offer (Detail)**: "Campaign ends soon".
+      7. **CTA**: "Buy Now".
+
+    **OUTPUT SCHEMA**:
+    - \`visualStyle\`: 'standard' (for all)
+    - **ALWAYS generate \`designSpec\`**.
+    - \`designSpec.layoutBlueprint\`: STRICTLY "Poster Style" instructions.
+  `;
+
+  let selectedPrompt = PROMPT_STANDARD_MODE;
+  if (targetSegment === 'manifest') {
+    selectedPrompt = PROMPT_MANIFEST_MODE;
+  } else if (isMangaMode) {
+    selectedPrompt = PROMPT_MANGA_MODE;
+  }
 
   const prompt = `
     ${selectedPrompt}
@@ -832,6 +876,10 @@ export const generateSwipeScreenImage = async (
     prompt = `
       **ROLE: Professional Graphic Designer & Photographer**
       **GOAL**: Create a high-converting Landing Page slide (9:16 Vertical).
+      
+      **DEFAULT MODEL RULE**:
+      - **ALL HUMAN MODELS MUST BE JAPANESE** unless strictly specified otherwise by the user.
+      - If the prompt describes a person, assume "Japanese".
       
       **DESIGN SPECIFICATION**:
       - **Layout**: ${designSpec.layoutBlueprint}
