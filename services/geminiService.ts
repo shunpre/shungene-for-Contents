@@ -298,7 +298,25 @@ export const analyzeProductContext = async (
             reason: "「医師監修」「No.1」などの実績は、失敗したくない保守的な層に刺さるため。",
             targetEmotion: "これなら間違いないという確信"
           }
-        ]
+        ],
+        fvAnalysis: {
+          elementBreakdown: ['メインキャッチ: 痩せたいならこれ', '権威性: 医師推奨No.1', 'CTA: 今すぐ試す'],
+          gazeGuidance: 'Z型配置で、キャッチコピーから商品画像、最後にCTAへと視線を誘導しています。',
+          occupationRatio: '画像6: テキスト4。商品パッケージのインパクトを重視。',
+          tone: '誠実・信頼系（青と白を基調とした清潔感のあるトーン）',
+          killerPhrases: ['医学会認定', 'リピート率98%'],
+          fontAnalysis: 'ゴシック体（太字）で視認性を確保しつつ、信頼感を演出。',
+          colorDesign: 'ベースカラー：白、メインカラー：青、アクセント：オレンジ',
+          designInsight: '全体的に余白を活かしたデザインで、情報の優先順位が明確です。特にCTA周りの装飾が効果的です。'
+        },
+        productAnalysis: {
+          persona: '30代〜40代の働く女性。忙しくて運動する時間がないが、体型維持には気を使いたい層。',
+          usp: '特許成分「〇〇」を業界最大濃度で配合。かつ、1日1回でOKという手軽さ。',
+          benefit: '無理な食事制限や激しい運動なしで、理想のシルエットを目指せる。',
+          evidence: ['楽天ランキング1位', '累計販売数100万個突破'],
+          offer: '初回980円（税込）、30日間全額返金保証付き',
+          strategicInsight: '「ダイエット＝辛い」という固定観念を覆す、「頑張らないダイエット」という切り口が刺さる可能性が高いです。'
+        }
       },
       summary: "モックデータによる分析結果です。",
       hypothetical: false
@@ -307,13 +325,9 @@ export const analyzeProductContext = async (
 
   const ai = getAI(apiKey);
 
-  analysis_material: files.filter(f => f.assetType === 'analysis_material'),
-    product_info: files.filter(f => f.assetType === 'product_info' || f.source === 'url' && (!f.assetType || f.assetType === 'product_info')),
-      competitor_info: files.filter(f => f.assetType === 'competitor_info'),
-        other: files.filter(f => f.assetType === 'other' || f.source === 'paste')
-};
 
-const prompt = `
+
+  const prompt = `
     あなたは「売れるFV（ファーストビュー）」を科学するプロフェッショナルです。
     提供された資料から、以下の2つの観点で徹底的な分析を行ってください。
 
@@ -409,67 +423,85 @@ const prompt = `
     \`\`\`
   `;
 
-const parts: any[] = [{ text: prompt }];
+  const parts: any[] = [{ text: prompt }];
 
-// Iterate through files and add them as parts
-for (const file of files) {
-  if (file.source === 'url') {
-    parts.push({
-      text: `--- SOURCE URL: ${file.name} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
-    });
-  } else if (file.data && file.mimeType) {
-    parts.push({
-      inlineData: {
-        mimeType: file.mimeType,
-        data: file.data
-      }
-    });
-  } else {
-    parts.push({
-      text: `--- SOURCE FILE: ${file.name} ---\n${file.content}`
-    });
-  }
-}
-
-try {
-  const response = await retryWithBackoff(() => ai.models.generateContent({
-    model: 'gemini-3-pro-preview', // Updated model
-    contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
-    config: {
-      temperature: 0.3,
-      tools: [{ googleSearch: {} }] // Enable Google Search grounding
+  // Helper to tag content for AI analysis
+  const getAssetLabel = (type: string | undefined) => {
+    switch (type) {
+      case 'analysis_material': return '【FV分析用資料 (Design/Visual)】';
+      case 'product_info': return '【商品分析用資料 (Product Info)】';
+      case 'competitor_info': return '【競合情報 (Competitor)】';
+      case 'other': return '【その他・自由入力 (Priority Instruction)】';
+      default: return '【未分類資料】';
     }
-  }));
-
-  console.log("Raw Gemini Response (Step 1):", response.text); // Debug logging
-
-  const parsed = parseJsonResponse<ProductProfile>(response.text);
-
-  // SANITIZATION: Ensure arrays and strings are present to prevent UI crashes
-  if (!parsed.painPoints || !Array.isArray(parsed.painPoints)) {
-    parsed.painPoints = [];
-  }
-  if (!parsed.solutions || !Array.isArray(parsed.solutions)) {
-    parsed.solutions = [];
-  }
-  if (!parsed.toneOfVoice || typeof parsed.toneOfVoice !== 'string') {
-    parsed.toneOfVoice = "信頼感, プロフェッショナル";
-  }
-  if (!parsed.productName) parsed.productName = "名称未設定";
-  if (!parsed.category) parsed.category = "未分類";
-  if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
-  if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
-
-  return {
-    profile: parsed,
-    summary: "分析が完了しました。",
-    hypothetical: false // Default to false, logic for true is complex to detect reliably without explicit flag in JSON
   };
 
-} catch (error) {
-  console.error("Gemini Analysis Error:", error);
-  throw error;
-}
+
+
+  // Iterate through files and add them as parts with context headers
+  for (const file of files) {
+    const label = getAssetLabel(file.assetType);
+
+    if (file.source === 'url') {
+      parts.push({
+        text: `--- SOURCE: ${label} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
+      });
+    } else if (file.data && file.mimeType) {
+      parts.push({
+        text: `--- SOURCE: ${label} (See following media) ---`
+      });
+      parts.push({
+        inlineData: {
+          mimeType: file.mimeType,
+          data: file.data
+        }
+      });
+    } else {
+      parts.push({
+        text: `--- SOURCE: ${label} ---\n${file.content}`
+      });
+    }
+  }
+
+  try {
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-3-pro-preview', // Updated model
+      contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
+      config: {
+        temperature: 0.3,
+        tools: [{ googleSearch: {} }] // Enable Google Search grounding
+      }
+    }));
+
+    console.log("Raw Gemini Response (Step 1):", response.text); // Debug logging
+
+    const parsed = parseJsonResponse<ProductProfile>(response.text);
+
+    // SANITIZATION: Ensure arrays and strings are present to prevent UI crashes
+    if (!parsed.painPoints || !Array.isArray(parsed.painPoints)) {
+      parsed.painPoints = [];
+    }
+    if (!parsed.solutions || !Array.isArray(parsed.solutions)) {
+      parsed.solutions = [];
+    }
+    if (!parsed.toneOfVoice || typeof parsed.toneOfVoice !== 'string') {
+      parsed.toneOfVoice = "信頼感, プロフェッショナル";
+    }
+    if (!parsed.productName) parsed.productName = "名称未設定";
+    if (!parsed.category) parsed.category = "未分類";
+    if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
+    if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
+
+    return {
+      profile: parsed,
+      summary: "分析が完了しました。",
+      hypothetical: false // Default to false, logic for true is complex to detect reliably without explicit flag in JSON
+    };
+
+  } catch (error) {
+    console.error("Gemini Analysis Error:", error);
+    throw error;
+  }
 };
 
 export const generateSwipeLP = async (
