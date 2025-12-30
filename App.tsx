@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { AnalysisResult } from './components/AnalysisResult';
 import { SwipeLPPreview } from './components/SwipeLPPreview';
-import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment, SwipeScreenHistory } from './types';
+import { UploadedFile, ProductProfile, AppState, SwipeLP, SwipeScreen, DesignSpec, TargetSegment, SwipeScreenHistory, AppealAxis } from './types';
 import { analyzeProductContext, generateSwipeLP, regenerateSwipeScreen, regenerateDesignSpec, generateSwipeScreenImage } from './services/geminiService';
 import { AlertCircle, Sparkles, Loader2, Key, Layers, PenTool, Image as ImageIcon } from 'lucide-react';
 
