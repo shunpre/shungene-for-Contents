@@ -307,125 +307,165 @@ export const analyzeProductContext = async (
 
   const ai = getAI(apiKey);
 
-  const prompt = `
-    あなたは熟練のマーケティング戦略家であり、コピーライターです。
-    提供されたテキスト、画像、動画、PDF、およびURL情報から、製品、サービス、またはブランドに関する情報を分析してください。
-    
-    **ターゲット層戦略:**
-    あなたは現在、**${targetSegment === 'latent' ? '潜在層 / 準顕在層 (まだニーズに気づいていない顧客)' : '顕在層 (積極的に検索している顧客 / ブランド指名検索者)'}** をターゲットとしています。
-    
-    ${targetSegment === 'latent' ? `
-    **潜在層向け戦略:**
-    - 「教育」と「共感」に焦点を当てます。
-    - ユーザーはまだこの製品の必要性を認識していません。
-    - 深層にある「隠れた悩み」や「潜在的なニーズ」を特定します。
-    - 「解決策」は、ユーザーにとっての「発見」として提示されるべきです。
-    ` : `
-    **顕在層向け戦略:**
-    - 「差別化」、「比較」、および「即時的なメリット」に焦点を当てます。
-    - ユーザーはすでに解決策や特定のブランドを探しています。
-    - 競合他社と比較して「なぜこの製品なのか？」（USP）を明確にします。
-    - 「解決策」は直接的で説得力があり、今すぐ購入する強力な理由を提供するものでなければなりません。
-    `}
+  analysis_material: files.filter(f => f.assetType === 'analysis_material'),
+    product_info: files.filter(f => f.assetType === 'product_info' || f.source === 'url' && (!f.assetType || f.assetType === 'product_info')),
+      competitor_info: files.filter(f => f.assetType === 'competitor_info'),
+        other: files.filter(f => f.assetType === 'other' || f.source === 'paste')
+};
 
-    **分析のステップ:**
-    1. **提供情報の分析**: まず、ユーザーから提供されたテキストやURL（文字列としての意味）を徹底的に読み解いてください。
-       - 特に**「商品分析資料」**として指定されたファイルがある場合は、その内容を最優先で分析の根拠としてください。
-       - **「デザイン参考(トンマナ)」**として指定された画像がある場合は、その視覚的な雰囲気（色使い、フォントの印象、高級感/親しみやすさ等）を言語化し、「トーン & マナー」の分析に反映させてください。
-       - **【重要】マーケティング要素の抽出**: 以下の要素があれば必ず抽出してください。なければ空欄で構いません。
-         - **価格**: 通常価格、セット価格など。
-         - **オファー**: 割引率、特典、キャンペーン、保証（返金保証など）。
-         - **権威性**: 受賞歴、No.1実績、専門家の推薦、メディア掲載。
-         - **限定性**: 期間、個数、先着順などの制限。
-         - **独自性**: 特許、独自成分、世界初などの差別化要素。
-         - **実績**: 販売数、満足度、リピート率、導入社数。
+const prompt = `
+    あなたは「売れるFV（ファーストビュー）」を科学するプロフェッショナルです。
+    提供された資料から、以下の2つの観点で徹底的な分析を行ってください。
 
-    2. **【最重要】訴求軸の抽出**:
-       - この商品が最も売れるための「切り口（アングル）」を**3つ**考案し、\`winningAxes\` に格納してください。
-       - それぞれの軸は、ターゲットの異なる感情やニーズに訴えかける全く別の角度にしてください（例：機能軸、感情軸、社会的証明軸など）。
+    **分析対象と優先順位:**
+    1. **FV分析（デザイン・視覚）**: 主に\`analysis_material\`（参考画像）から分析します。
+    2. **商品分析（コピー・戦略）**: 主に\`product_info\`（自社情報）、\`competitor_info\`（競合情報）から分析します。
+    3. **【最重要】自由入力の尊重**: \`other\`（自由入力・検索メモ）に記載された指示や情報は、他の全情報よりも優先してください。
 
-    3. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
+    ---
     
-    **重要: 情報が取得できない場合の対応**
-    - URLが検索でヒットしない、またはアクセスできない場合でも、**絶対に「不明」「未設定」などの空欄で返さないでください。**
-    - その場合は、URLの文字列や一般的な業界知識から推測し、**「もしこの製品が存在するとしたら、どのようなプロファイルが理想的か？」という観点で、架空の（しかし説得力のある）プロファイルを生成してください。**
-    - ターゲット層や悩みは、そのカテゴリーにおける一般的なものを適用してください。
-    - 架空のプロファイルを生成した場合は、summaryにその旨を記載してください。
+    **【1. FV分析】参考画像から「売れるデザインロジック」を解剖する**
+    \`analysis_material\`として画像が提供されている場合、その画像が「なぜ優れているのか」を以下の項目で分析してください。
     
-    あなたのタスクは、これらを分析し、**「${targetSegment === 'latent' ? 'まだ商品の必要性に気づいていない潜在層' : '比較検討中の顕在層'}」** に響くような切り口を見つけることです。
+    *   **要素の分析**: メインコピー、権威性バッジ、No.1メダル、オファー、CTAボタンなど、構成要素の洗い出し。
+    *   **視線誘導**: Z型、F型など、ユーザーの目をどう動かしているか。「キャッチ→権威性→CTA」の流れ。
+    *   **専有面積**: 画像と文字のバランス。商品画像の大きさ対コピーの大きさ。
+    *   **トーン**: 「煽り系」「誠実・信頼系」「雑誌風おしゃれ系」「親しみ系」など。
+    *   **キラーフレーズ**: 「〇〇な方へ」「緊急」「ついに解禁」など、フックとなる定型句。
+    *   **フォント**: ゴシック（力強さ）、明朝（高級感）、手書き（親近感）などの使い分け。
+    *   **カラー**: メインカラー、アクセントカラー（CTAボタン）の意図。
+
+    ---
+
+    **【2. 商品分析】「誰に・何を・どう言うか」を定義する**
+    \`product_info\`、\`competitor_info\`から、最も刺さる訴求ポイントを定義してください。
     
-    必ず以下のJSONスキーマ形式のみで出力してください。Markdownのコードブロック( \`\`\`json ... \`\`\` )で囲んでください。
+    *   **ターゲット像（ペルソナ）**: 具体的な悩みを持つ「たった一人の顧客」。
+    *   **USP（独自の強み）**: 競合にはない、自社だけの「一点突破」ポイント。
+    *   **ベネフィット**: 機能ではなく「変化」。これを使うとどうなるか。
+    *   **エビデンス**: 創業年数、成分、満足度、販売数などの「証拠」。
+    *   **オファー**: 初回価格、返金保証、特典など、背中を押す条件。
+
+    ---
+
+    **出力形式**
+    以下のJSONスキーマに従って出力してください。
     
     Schema:
-    ${JSON.stringify(PRODUCT_PROFILE_SCHEMA, null, 2)}
-    
-    分析のポイント:
-    - 機能そのものより、その機能がもたらす「感情的価値」や「生活の変化」に着目してください。
-    - ${targetSegment === 'latent' ? '潜在層が抱えているであろう「隠れた悩み」や「諦めていること」を言語化してください。' : '競合との違いや、今すぐ選ぶべき理由を明確にしてください。'}
-    - 出力は日本語で行ってください。
+    \`\`\`json
+    {
+      "type": "object",
+      "properties": {
+        "productName": { "type": "string" },
+        "category": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "uniqueValueProposition": { "type": "string" },
+        "toneOfVoice": { "type": "string" },
+        "painPoints": { "type": "array", "items": { "type": "string" } },
+        "solutions": { "type": "array", "items": { "type": "string" } },
+        "winningAxes": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "title": {"type": "string"},
+              "reason": {"type": "string"},
+              "targetEmotion": {"type": "string"}
+            }
+          }
+        },
+        "fvAnalysis": {
+          "type": "object",
+          "properties": {
+            "elementBreakdown": { "type": "array", "items": { "type": "string" }, "description": "構成要素のリスト" },
+            "gazeGuidance": { "type": "string", "description": "視線誘導のロジック" },
+            "occupationRatio": { "type": "string", "description": "専有面積・バランスの設計" },
+            "tone": { "type": "string", "description": "デザインのトーン" },
+            "killerPhrases": { "type": "array", "items": { "type": "string" }, "description": "使われているキラーフレーズ" },
+            "fontAnalysis": { "type": "string", "description": "フォント設計" },
+            "colorDesign": { "type": "string", "description": "カラー設計" }
+          },
+          "required": ["elementBreakdown", "tone", "colorDesign"]
+        },
+        "productAnalysis": {
+          "type": "object",
+          "properties": {
+            "persona": { "type": "string" },
+            "usp": { "type": "string" },
+            "benefit": { "type": "string" },
+            "evidence": { "type": "array", "items": { "type": "string" } },
+            "offer": { "type": "string" }
+          },
+          "required": ["persona", "usp", "benefit", "offer"]
+        }
+      },
+      "required": ["productName", "fvAnalysis", "productAnalysis", "winningAxes"]
+    }
+    \`\`\`
   `;
 
-  const parts: any[] = [{ text: prompt }];
+const parts: any[] = [{ text: prompt }];
 
-  // Iterate through files and add them as parts
-  for (const file of files) {
-    if (file.source === 'url') {
-      parts.push({
-        text: `--- SOURCE URL: ${file.name} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
-      });
-    } else if (file.data && file.mimeType) {
-      parts.push({
-        inlineData: {
-          mimeType: file.mimeType,
-          data: file.data
-        }
-      });
-    } else {
-      parts.push({
-        text: `--- SOURCE FILE: ${file.name} ---\n${file.content}`
-      });
-    }
-  }
-
-  try {
-    const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Updated model
-      contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
-      config: {
-        temperature: 0.3,
-        tools: [{ googleSearch: {} }] // Enable Google Search grounding
+// Iterate through files and add them as parts
+for (const file of files) {
+  if (file.source === 'url') {
+    parts.push({
+      text: `--- SOURCE URL: ${file.name} ---\nURL: ${file.content}\n(Please use the Google Search tool to analyze this URL content)`
+    });
+  } else if (file.data && file.mimeType) {
+    parts.push({
+      inlineData: {
+        mimeType: file.mimeType,
+        data: file.data
       }
-    }));
-
-    console.log("Raw Gemini Response (Step 1):", response.text); // Debug logging
-
-    const parsed = parseJsonResponse<ProductProfile>(response.text);
-
-    // SANITIZATION: Ensure arrays and strings are present to prevent UI crashes
-    if (!parsed.painPoints || !Array.isArray(parsed.painPoints)) {
-      parsed.painPoints = [];
-    }
-    if (!parsed.solutions || !Array.isArray(parsed.solutions)) {
-      parsed.solutions = [];
-    }
-    if (!parsed.toneOfVoice || typeof parsed.toneOfVoice !== 'string') {
-      parsed.toneOfVoice = "信頼感, プロフェッショナル";
-    }
-    if (!parsed.productName) parsed.productName = "名称未設定";
-    if (!parsed.category) parsed.category = "未分類";
-    if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
-    if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
-
-    return {
-      profile: parsed,
-      summary: "分析が完了しました。",
-      hypothetical: false // Default to false, logic for true is complex to detect reliably without explicit flag in JSON
-    };
-
-  } catch (error) {
-    console.error("Gemini Analysis Error:", error);
-    throw error;
+    });
+  } else {
+    parts.push({
+      text: `--- SOURCE FILE: ${file.name} ---\n${file.content}`
+    });
   }
+}
+
+try {
+  const response = await retryWithBackoff(() => ai.models.generateContent({
+    model: 'gemini-3-pro-preview', // Updated model
+    contents: { role: 'user', parts: parts } as any, // Cast to any to avoid type issues with parts structure
+    config: {
+      temperature: 0.3,
+      tools: [{ googleSearch: {} }] // Enable Google Search grounding
+    }
+  }));
+
+  console.log("Raw Gemini Response (Step 1):", response.text); // Debug logging
+
+  const parsed = parseJsonResponse<ProductProfile>(response.text);
+
+  // SANITIZATION: Ensure arrays and strings are present to prevent UI crashes
+  if (!parsed.painPoints || !Array.isArray(parsed.painPoints)) {
+    parsed.painPoints = [];
+  }
+  if (!parsed.solutions || !Array.isArray(parsed.solutions)) {
+    parsed.solutions = [];
+  }
+  if (!parsed.toneOfVoice || typeof parsed.toneOfVoice !== 'string') {
+    parsed.toneOfVoice = "信頼感, プロフェッショナル";
+  }
+  if (!parsed.productName) parsed.productName = "名称未設定";
+  if (!parsed.category) parsed.category = "未分類";
+  if (!parsed.targetAudience) parsed.targetAudience = "ターゲット層が特定できませんでした";
+  if (!parsed.uniqueValueProposition) parsed.uniqueValueProposition = "UVPが生成されませんでした";
+
+  return {
+    profile: parsed,
+    summary: "分析が完了しました。",
+    hypothetical: false // Default to false, logic for true is complex to detect reliably without explicit flag in JSON
+  };
+
+} catch (error) {
+  console.error("Gemini Analysis Error:", error);
+  throw error;
+}
 };
 
 export const generateSwipeLP = async (

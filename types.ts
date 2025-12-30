@@ -26,6 +26,26 @@ export interface ProductProfile {
   uniqueness?: string;
   trackRecord?: string;
   winningAxes?: AppealAxis[]; // AI generates 3 proposed angles
+
+  // NEW: Detailed FV Visual Analysis
+  fvAnalysis?: {
+    elementBreakdown: string[]; // メインコピー、サブコピー、CTA等
+    gazeGuidance: string; // 視線誘導のロジック
+    occupationRatio: string; // 専有面積のバランス
+    tone: string; // 煽り、誠実、おしゃれ等
+    killerPhrases: string[]; // キラーフレーズのパターン
+    fontAnalysis: string; // フォント選びのロジック
+    colorDesign: string; // カラー設計
+  };
+
+  // NEW: Detailed Product Strategy Analysis (Refining existing fields)
+  productAnalysis?: {
+    persona: string; // ターゲット像
+    usp: string; // 独自の強み
+    benefit: string; // ベネフィット
+    evidence: string[]; // エビデンス
+    offer: string; // オファー
+  };
 }
 
 export interface AppealAxis {
