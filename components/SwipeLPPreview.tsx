@@ -172,7 +172,7 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
             <Sparkles className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-semibold uppercase">LP コンセプト</p>
+            <p className="text-xs text-gray-500 font-semibold uppercase">FV コンセプト</p>
             <p className="text-sm text-gray-900 font-medium italic">"{lpData.concept || 'コンセプト未設定'}"</p>
           </div>
         </div>
@@ -183,114 +183,145 @@ export const SwipeLPPreview: React.FC<SwipeLPPreviewProps> = ({
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors shadow-sm"
             >
               <Download className="w-4 h-4" />
-              一括ダウンロード (Zip)
+              {screens.length === 1 ? '画像を保存' : '一括ダウンロード (Zip)'}
             </button>
-            <button
-              onClick={handleExportVideo}
-              disabled={isExportingVideo}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-wait"
-            >
-              {isExportingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-              動画書き出し (MP4)
-            </button>
+            {screens.length > 1 && (
+              <button
+                onClick={handleExportVideo}
+                disabled={isExportingVideo}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-wait"
+              >
+                {isExportingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                動画書き出し (MP4)
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* 2. Slide Navigation */}
-      <div>
-        <div className="flex justify-between items-end mb-3">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-            <Layout className="w-4 h-4" />
-            スライド一覧 (Slide List)
-          </h3>
+      {/* 2. Slide Navigation - HIDDEN FOR SINGLE FV MODE */}
+      {screens.length > 1 && (
+        <div>
+          <div className="flex justify-between items-end mb-3">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <Layout className="w-4 h-4" />
+              スライド一覧 (Slide List)
+            </h3>
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => !isGeneratingVisuals && setActiveTab('copy')}
+                disabled={isGeneratingVisuals}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'copy' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700 disabled:opacity-50'
+                  }`}
+              >
+                <StickyNote className="w-3 h-3" />
+                シナリオ & コピー
+              </button>
+              <button
+                onClick={() => setActiveTab('visual')}
+                disabled={false}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'visual' ? 'bg-white text-purple-600 shadow-sm' :
+                  'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                <ImageIcon className="w-3 h-3" />
+                ビジュアル (デザイン & 画像)
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
+            <div className="flex gap-3 w-max min-w-full">
+              {screens.map((screen, index) => {
+                if (!screen) return null; // Safe guard for null screens
+                const isLocked = isGeneratingVisuals && index > visualProgressIndex;
+                const isProcessing = isGeneratingVisuals && index === visualProgressIndex;
+
+                const isActive = selectedIndex === index;
+                let borderClass = 'border-gray-200 bg-white';
+                if (isActive) {
+                  if (activeTab === 'visual') borderClass = 'border-purple-500 bg-purple-50 shadow-md transform -translate-y-1';
+                  else borderClass = 'border-indigo-600 bg-indigo-50 shadow-md transform -translate-y-1';
+                } else if (isLocked) {
+                  borderClass = 'border-gray-100 bg-gray-50 opacity-60';
+                }
+
+                // Determine preview text
+                let previewText = "";
+                if (screen.mangaScript) {
+                  previewText = `[Manga] ${screen.mangaScript.panel1.situation.substring(0, 30)}...`;
+                } else {
+                  previewText = screen.mainCopy ? screen.mainCopy.substring(0, 30) + "..." : "（テキストなし）";
+                }
+
+                return (
+                  <button
+                    key={screen.order || index}
+                    onClick={() => !isLocked && setSelectedIndex(index)}
+                    disabled={isLocked}
+                    className={`relative flex flex-col items-start p-3 w-40 rounded-lg border-2 transition-all text-left group ${borderClass}`}
+                  >
+                    <div className="flex justify-between w-full items-center mb-2">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-white/50 text-gray-900' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                        Scene {screen.order || index + 1}
+                      </span>
+                      {isActive && !isLocked && <div className={`w-2 h-2 rounded-full animate-pulse bg-current`} />}
+                      {isLocked && <Lock className="w-3 h-3 text-gray-400" />}
+                    </div>
+
+                    <div className="w-full bg-gray-100 h-16 rounded mb-2 border border-gray-100 overflow-hidden relative flex items-center justify-center">
+                      {isProcessing ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                      ) : screen.imageData ? (
+                        <img src={`data:image/jpeg;base64,${screen.imageData}`} className="w-full h-full object-cover" alt="" />
+                      ) : activeTab === 'visual' && screen.designSpec ? (
+                        <p className="text-[8px] text-pink-600 font-mono leading-tight text-left w-full h-full p-1 bg-pink-50">
+                          Design Ready...
+                        </p>
+                      ) : (
+                        <p className="text-[9px] text-gray-400 font-mono text-left w-full h-full p-1 leading-tight">
+                          {previewText}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight h-8 w-full">
+                      {screen.visualStyle === 'manga' ? 'マンガパート' : (screen.title || "（タイトルなし）")}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SINGLE MODE TOGGLE (Simulated) */}
+      {screens.length === 1 && (
+        <div className="flex justify-center mb-4">
           <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => !isGeneratingVisuals && setActiveTab('copy')}
               disabled={isGeneratingVisuals}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'copy' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700 disabled:opacity-50'
+              className={`px-6 py-2 text-sm font-bold rounded-md transition-all flex items-center gap-2 ${activeTab === 'copy' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700 disabled:opacity-50'
                 }`}
             >
-              <StickyNote className="w-3 h-3" />
-              シナリオ & コピー
+              <StickyNote className="w-4 h-4" />
+              FV構成 (Copy)
             </button>
             <button
               onClick={() => setActiveTab('visual')}
               disabled={false}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${activeTab === 'visual' ? 'bg-white text-purple-600 shadow-sm' :
+              className={`px-6 py-2 text-sm font-bold rounded-md transition-all flex items-center gap-2 ${activeTab === 'visual' ? 'bg-white text-purple-600 shadow-sm' :
                 'text-gray-500 hover:text-gray-700'
                 }`}
             >
-              <ImageIcon className="w-3 h-3" />
-              ビジュアル (デザイン & 画像)
+              <ImageIcon className="w-4 h-4" />
+              FVデザイン (Visual)
             </button>
           </div>
         </div>
-
-        <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
-          <div className="flex gap-3 w-max min-w-full">
-            {screens.map((screen, index) => {
-              if (!screen) return null; // Safe guard for null screens
-              const isLocked = isGeneratingVisuals && index > visualProgressIndex;
-              const isProcessing = isGeneratingVisuals && index === visualProgressIndex;
-
-              const isActive = selectedIndex === index;
-              let borderClass = 'border-gray-200 bg-white';
-              if (isActive) {
-                if (activeTab === 'visual') borderClass = 'border-purple-500 bg-purple-50 shadow-md transform -translate-y-1';
-                else borderClass = 'border-indigo-600 bg-indigo-50 shadow-md transform -translate-y-1';
-              } else if (isLocked) {
-                borderClass = 'border-gray-100 bg-gray-50 opacity-60';
-              }
-
-              // Determine preview text
-              let previewText = "";
-              if (screen.mangaScript) {
-                previewText = `[Manga] ${screen.mangaScript.panel1.situation.substring(0, 30)}...`;
-              } else {
-                previewText = screen.mainCopy ? screen.mainCopy.substring(0, 30) + "..." : "（テキストなし）";
-              }
-
-              return (
-                <button
-                  key={screen.order || index}
-                  onClick={() => !isLocked && setSelectedIndex(index)}
-                  disabled={isLocked}
-                  className={`relative flex flex-col items-start p-3 w-40 rounded-lg border-2 transition-all text-left group ${borderClass}`}
-                >
-                  <div className="flex justify-between w-full items-center mb-2">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-white/50 text-gray-900' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                      Scene {screen.order || index + 1}
-                    </span>
-                    {isActive && !isLocked && <div className={`w-2 h-2 rounded-full animate-pulse bg-current`} />}
-                    {isLocked && <Lock className="w-3 h-3 text-gray-400" />}
-                  </div>
-
-                  <div className="w-full bg-gray-100 h-16 rounded mb-2 border border-gray-100 overflow-hidden relative flex items-center justify-center">
-                    {isProcessing ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-                    ) : screen.imageData ? (
-                      <img src={`data:image/jpeg;base64,${screen.imageData}`} className="w-full h-full object-cover" alt="" />
-                    ) : activeTab === 'visual' && screen.designSpec ? (
-                      <p className="text-[8px] text-pink-600 font-mono leading-tight text-left w-full h-full p-1 bg-pink-50">
-                        Design Ready...
-                      </p>
-                    ) : (
-                      <p className="text-[9px] text-gray-400 font-mono text-left w-full h-full p-1 leading-tight">
-                        {previewText}
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight h-8 w-full">
-                    {screen.visualStyle === 'manga' ? 'マンガパート' : (screen.title || "（タイトルなし）")}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* 3. Editor & Preview Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

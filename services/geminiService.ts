@@ -416,45 +416,6 @@ export const generateSwipeLP = async (
               typographyInstruction: "Bold, Gold & Black, Luxury feel",
               colorPalette: "#Gold #Black"
             }
-          },
-          {
-            order: 2,
-            type: 'benefit',
-            title: "選ばれる3つの理由",
-            mainCopy: "1. 特許成分配合\n2. 医師監修\n3. 飲みやすさNo.1",
-            visualStyle: 'standard',
-            designSpec: {
-              layoutBlueprint: "3 Point list with icons",
-              visualAssetInstruction: "Icons representing Science, Doctor, and Happiness.",
-              typographyInstruction: "Clean sans-serif",
-              colorPalette: "#White #Blue"
-            }
-          },
-          {
-            order: 3,
-            type: 'proof',
-            title: "ユーザー満足度98%",
-            mainCopy: "「もっと早く出会いたかった」の声、続々。",
-            visualStyle: 'standard',
-            designSpec: {
-              layoutBlueprint: "Testimonial cards integration",
-              visualAssetInstruction: "Grid of smiling Japanese user faces.",
-              typographyInstruction: "Trustworthy",
-              colorPalette: "#Green"
-            }
-          },
-          {
-            order: 4,
-            type: 'cta',
-            title: "まずは1ヶ月試してください",
-            mainCopy: "返金保証付きだから安心。\n今すぐ申し込む。",
-            visualStyle: 'standard',
-            designSpec: {
-              layoutBlueprint: "Button focused layout",
-              visualAssetInstruction: "Product shot with 'Guarantee' badge.",
-              typographyInstruction: "Urgent red button",
-              colorPalette: "#Red"
-            }
           }
         ]
       };
@@ -469,169 +430,49 @@ export const generateSwipeLP = async (
           type: 'hook',
           title: "まだ無理なダイエットしてる？",
           mainCopy: "辛い食事制限も、激しい運動も、もう必要ありません。",
-          visualStyle: isMangaMode ? 'manga' : 'standard',
+          visualStyle: 'standard',
           designSpec: {
             layoutBlueprint: "インパクトのある問いかけ",
             visualAssetInstruction: "驚いた表情の日本人女性",
             typographyInstruction: "太字で強調",
             colorPalette: "#FF0000"
-          },
-          mangaScript: isMangaMode ? {
-            panel1: { panelNumber: 1, situation: "体重計に乗る", dialogue: "えっ…また増えてる？" },
-            panel2: { panelNumber: 2, situation: "鏡を見る", dialogue: "服がきつい…" },
-            panel3: { panelNumber: 3, situation: "ため息", dialogue: "もう何やってもダメなのかな" },
-            panel4: { panelNumber: 4, situation: "謎の光", dialogue: "諦めるのはまだ早い！" }
-          } : undefined
-        },
-        {
-          order: 2,
-          type: 'problem',
-          title: "その原因は「代謝」かも",
-          mainCopy: "年齢とともに下がる代謝。努力だけではどうにもなりません。",
-          visualStyle: isMangaMode ? 'manga' : 'standard',
-          designSpec: {
-            layoutBlueprint: "グラフで説明",
-            visualAssetInstruction: "代謝低下のグラフ",
-            typographyInstruction: "冷静なトーン",
-            colorPalette: "#0000FF"
-          },
-          mangaScript: isMangaMode ? {
-            panel1: { panelNumber: 1, situation: "解説キャラ登場", dialogue: "それは代謝のせいかも！" },
-            panel2: { panelNumber: 2, situation: "グラフを見せる", dialogue: "30代から急激に落ちるのよ" },
-            panel3: { panelNumber: 3, situation: "驚く主人公", dialogue: "知らなかった…" },
-            panel4: { panelNumber: 4, situation: "解決策の提示", dialogue: "だからこれを補うの" }
-          } : undefined
-        },
-        {
-          order: 3,
-          type: 'solution',
-          title: "そこで「Mock Supplement」",
-          mainCopy: "1日1粒で、あなたの「燃える力」をサポートします。",
-          visualStyle: 'standard', // Force standard for product
-          designSpec: {
-            layoutBlueprint: "商品パッケージ中心",
-            visualAssetInstruction: "商品画像",
-            typographyInstruction: "高級感",
-            colorPalette: "#Gold"
           }
         }
       ]
     };
   }
 
-  // 1. MANGA MODE PROMPT (Story & Marketing Hybrid)
-  const PROMPT_MANGA_MODE = `
-    **ROLE: Professional Japanese Webtoon (Vertical Scroll Manga) Scriptwriter & Marketer**
+  // 3. FIRST VIEW ONLY PROMPT (Dedicated Mode)
+  const PROMPT_FIRST_VIEW_ONLY = `
+    **ROLE: World-Class Advertising Creative Director & Copywriter**
     
-    **GOAL**: Create a highly engaging, story-driven "Manga LP" (8-20 slides) that seamlessly sells the product using the **PASTOR Formula**.
+    **GOAL**: Create ONE single, high-impact "First View" (FV) slide for a mobile landing page.
     
-    **CRITICAL INSTRUCTION: UNIFIED BLUEPRINT GENERATION**
-    - **MANGA PART (Slides 1-[Mid])**:
-      - \`visualStyle\`: 'manga'
-      - **OUTPUT**: 
-        - Generate \`mangaScript\` (Panel 1-4 details).
-        - Generate \`designSpec\` (Describe the 4-panel layout and character style).
-      - **DO NOT** generate \`title\` or \`mainCopy\`. Leave them empty or null.
-      - **CONTENT & TONE**: 
-        - **Natural Japanese Dialogue**: Use casual, conversational Japanese (e.g., "〜だよね", "〜かも？", "マジで？"). Avoid stiff textbook Japanese.
-        - **Story Flow**: Intro (Sympathy) -> Twist (Crisis) -> Discovery (Solution).
-        - **Character Dynamics**: Create a relatable protagonist with distinct emotional reactions.
+    **CRITICAL RULE: ONE SLIDE ONLY**
+    - usage: You MUST generate exactly **1 screen** in the \`screens\` array.
+    - \`visualStyle\`: 'standard'
     
-    - **SALES PART (Slides [Mid]-[End])**:
-      - \`visualStyle\`: 'standard' (Hybrid)
-      - **OUTPUT**: 
-        - Generate \`designSpec\` (Detailed layout, visuals, typography).
-        - Generate \`mainCopy\` (Standard Marketing Copy).
-      - **DO NOT** generate \`mangaScript\`.
-      - **CONTENT**: Offer, Authority, Scarcity, Call to Action.
-      - **TONE**: Use standard, persuasive marketing copy (NOT dialogue). Clear, professional, and benefit-driven.
+    **FV CONCEPT: The 3-Second Rule**
+    - You have 3 seconds to grab the user's attention.
+    - The slide must serve as a "Digital Poster" that instantly conveys:
+      1. **WHO** is this for? (Target Match)
+      2. **WHAT** is the benefit? (Catch Copy)
+      3. **WHY** now? (Offer / Authority)
     
-    **PASTOR FORMULA**:
-      1. **P (Problem)**: Protagonist's daily life & struggle. (SHOW, DON'T TELL)
-      2. **A (Agitation)**: The problem gets worse (Crisis).
-      3. **S (Solution)**: Discovery of the product.
-      4. **T (Transformation)**: Life after using the product (Happy Ending).
-      5. **O (Offer)**: Product details, price, authority, scarcity.
-      6. **R (Response)**: Call to Action.
+    **ELEMENTS TO INCLUDE (All in this ONE slide)**:
+    - **Visual**: A high-quality product hero shot or a target persona experiencing the benefit.
+    - **Catch Copy**: Short, punchy, benefit-driven. (Maximum 15 chars recommended).
+    - **Sub Copy**: Supporting context or authority (e.g., "No.1 Ranked", "Doctor Recommended").
+    - **CTA / Offer**: "50% OFF", "Limited Time", "Check Diagnosis".
     
     **OUTPUT SCHEMA**:
-    - Use the provided JSON schema.
-    - **ALWAYS generate \`designSpec\` for ALL slides (including Manga).**
-    - For 'manga' slides, populate \`mangaScript\`.
-    - For 'standard' slides, populate \`mainCopy\`.
-  `;
-
-  // 2. STANDARD MODE PROMPT (Strictly Copy & Marketing)
-  const PROMPT_STANDARD_MODE = `
-    **ROLE: Top-tier Landing Page Copywriter & Art Director**
-    
-    **GOAL**: Create a high-converting Swipe LP (8-20 slides) based on the product profile.
-    
-    **CRITICAL INSTRUCTION: UNIFIED BLUEPRINT GENERATION**
-    - **ALL SLIDES**:
-      - \`visualStyle\`: 'standard'
-      - **OUTPUT**: 
-        - Generate \`mainCopy\` (Short, punchy copy).
-        - Generate detailed \`designSpec\` (Layout, Visuals, Typography, Color).
-      - **DO NOT** generate \`mangaScript\`.
-      
-    **DEFAULT MODEL RULE**: 
-    - Unless explicitly instructed otherwise, **ALWAYS describe the model/persona as 'Japanese'** (Japanese woman/man).
-    
-    **STRUCTURE (PAS/AIDA)**:
-      1. **Problem**: "Are you struggling with...?"
-      2. **Agitation**: "If left alone, it becomes..."
-      3. **Solution**: "Here is the Product!"
-      4. **Benefit/Proof**: "Why it works."
-      5. **Offer**: "Buy now."
-    
-    **OUTPUT SCHEMA**:
-    - **ALWAYS generate \`designSpec\` for ALL slides.**
-    - \`mainCopy\`: Short, punchy copy.
-  `;
-
-  // 3. MANIFEST MODE PROMPT (Poster-like, Product-First)
-  const PROMPT_MANIFEST_MODE = `
-    **ROLE: Luxury Advertising Creative Director & Direct Response Copywriter**
-    
-    **GOAL**: Create a high-impact, "Poster-Style" Swipe LP (8-15 slides) targeting "Manifest" (High Intent) users.
-    
-    **KEY STRATEGY**: 
-    - **NO FLUFF / NO STORIES**: Users already know what they want. Show them the PRODUCT and the OFFER immediately.
-    - **POSTER VISUALS**: Every slide should look like a standalone high-end advertisement poster. High information density but clean layout.
-    
-    **DEFAULT MODEL RULE**: 
-    - Unless explicitly instructed otherwise, **ALWAYS describe the model/persona as 'Japanese'** (Japanese woman/man).
-
-    **CRITICAL INSTRUCTION: FV (FIRST VIEW - Slide 1) RULE**:
-    - **Slide 1 MUST be a "Perfect Commercial Poster" containing ALL 4 elements**:
-      1. **PRODUCT IMAGE** (Hero shot)
-      2. **CATCH COPY** (Benefit-driven)
-      3. **HARD OFFER** (Price/Discount/Campaign - e.g. "50% OFF Now")
-      4. **MODEL/PERSONA** (Target user using/holding the product - **MUST BE JAPANESE**)
-    - **Design Spec for Slide 1**: "Magazine Cover-like layout. Full-screen model/background with product overlay. Big bold typography for Offer."
-    
-    **STRUCTURE (Direct Response)**:
-      1. **FV (Impact)**: Product + Offer + Catch + Model (ALL IN ONE).
-      2. **Benefit 1**: The #1 reason to buy.
-      3. **Benefit 2**: The #2 reason to buy.
-      4. **Proof/Authority**: No.1 Badge, Doctor recommendation, or Testimonial.
-      5. **Comparison/USP**: Why this product > Others.
-      6. **Offer (Detail)**: "Campaign ends soon".
-      7. **CTA**: "Buy Now".
-
-    **OUTPUT SCHEMA**:
-    - \`visualStyle\`: 'standard' (for all)
+    - \`screens\`: Array containing EXACTLY 1 item.
+    - \`concept\`: Brief description of this FV's angle (e.g., "Fear-based approach", "Authority-based approach").
     - **ALWAYS generate \`designSpec\`**.
-    - \`designSpec.layoutBlueprint\`: STRICTLY "Poster Style" instructions.
   `;
 
-  let selectedPrompt = PROMPT_STANDARD_MODE;
-  if (targetSegment === 'manifest') {
-    selectedPrompt = PROMPT_MANIFEST_MODE;
-  } else if (isMangaMode) {
-    selectedPrompt = PROMPT_MANGA_MODE;
-  }
+  // FORCE FV MODE PROMPT
+  const selectedPrompt = PROMPT_FIRST_VIEW_ONLY;
 
   const prompt = `
     ${selectedPrompt}
@@ -643,7 +484,7 @@ export const generateSwipeLP = async (
     提供価値(UVP): ${profile.uniqueValueProposition}
     悩み: ${profile.painPoints.join(', ')}
     解決策: ${profile.solutions.join(', ')}
-    トーン: ${isMangaMode ? '親しみやすい、感情豊かなキャラクター口調（タメ口や自然な会話）' : profile.toneOfVoice}
+    トーン: ${profile.toneOfVoice}
     価格: ${profile.price || ''}
     オファー: ${profile.discountOffer || ''}
     権威性: ${profile.authority || ''}
@@ -652,22 +493,15 @@ export const generateSwipeLP = async (
     実績: ${profile.trackRecord || ''}
 
     --- 制作ガイドライン(厳守) ---
-    ${SWIPE_LP_GUIDELINES}
-
-    重要指示：
-    1. **FVのインパクト**: 1枚目は勝負です。${targetSegment === 'latent' ? '「えっ？」と思わせる意外性や、深い共感' : '「これだ！」と思わせる圧倒的なベネフィット（商品名・オファー必須）'} で惹きつけてください。
-    2. **インタラクティブ要素**: 序盤に必ず「チェックリスト」や「診断」のスライドを入れてください。
-    3. **枚数**: **全8〜20枚**の範囲で、最適な枚数にしてください（6枚で終わらせないこと）。
-    4. **visualStyle**: ${isMangaMode ? "基本は 'manga' ですが、商品スペックやオファーの強調が必要なスライドのみ 'standard' に切り替えても構いません。" : "全て 'standard' にしてください。"}
+    1. **枚数制限**: **必ず「1枚」だけ** 生成してください。スワイプ形式ではありません。
+    2. **インパクト重視**: この1枚でクリックさせるための「最強の1枚」を作ってください。
+    3. **visualStyle**: 必ず 'standard' にしてください。
 
     出力形式:
     必ず以下のJSONスキーマに従ってください。Markdownコードブロックで囲んでください。
 
     Schema:
     ${JSON.stringify(SWIPE_LP_SCHEMA, null, 2)}
-    
-    各スライドの 'title' は短く（15文字以内推奨）、直感的に刺さるものにしてください。
-    'mainCopy' は長文を避け、箇条書きや短いフレーズで構成してください。
   `;
 
   try {

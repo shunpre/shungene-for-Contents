@@ -389,9 +389,9 @@ const App: React.FC = () => {
         {hasApiKey && (
           <>
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">瞬ジェネforコンテンツ</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">瞬ジェネ for FirstView</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
-                資料をアップロードして「分析」→「コピー生成」→「コンテンツ作成」の3ステップで、売れるスワイプLPを構築します。
+                資料をアップロードして「分析」→「FVコンセプト」→「FVデザイン」の3ステップで、最強のファーストビューを構築します。
               </p>
             </div>
 
@@ -427,15 +427,15 @@ const App: React.FC = () => {
                   {appState === AppState.ANALYSIS_COMPLETE && (
                     <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
                       <div>
-                        <h3 className="font-bold text-indigo-900">Step 2: コピー構成案の作成</h3>
-                        <p className="text-sm text-indigo-700">製品プロファイルを元にシナリオを設計します。</p>
+                        <h3 className="font-bold text-indigo-900">Step 2: FV構成案の作成</h3>
+                        <p className="text-sm text-indigo-700">製品プロファイルを元にファーストビューを設計します。</p>
                       </div>
                       <button
                         onClick={handleGenerateLP}
                         className="group relative inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
                       >
                         <Sparkles className="w-4 h-4 mr-2 text-yellow-300" />
-                        LP構成案を生成する
+                        FV案を生成する
                       </button>
                     </div>
                   )}
@@ -443,8 +443,8 @@ const App: React.FC = () => {
                   {appState === AppState.GENERATING_LP && (
                     <div className="bg-white p-8 rounded-xl border border-gray-200 text-center space-y-4 shadow-sm">
                       <div className="flex justify-center"><Loader2 className="w-10 h-10 text-indigo-600 animate-spin" /></div>
-                      <h3 className="font-bold text-gray-900">AIが構成案を作成中...</h3>
-                      <p className="text-sm text-gray-500">スワイプLPの成功法則に基づいて構成を考えています。</p>
+                      <h3 className="font-bold text-gray-900">AIが最強のFVを考案中...</h3>
+                      <p className="text-sm text-gray-500">3秒で心を掴むキャッチコピーとビジュアルを設計しています。</p>
                     </div>
                   )}
                 </div>
@@ -455,9 +455,9 @@ const App: React.FC = () => {
               <div className="border-t border-gray-200 pt-10 animate-in fade-in slide-in-from-bottom-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    {appState === AppState.LP_CREATED ? '生成されたスワイプLP構成案' :
-                      appState === AppState.GENERATING_VISUALS ? 'ビジュアルコンテンツ生成中...' :
-                        '最終コンテンツ確認'}
+                    {appState === AppState.LP_CREATED ? '生成されたFV構成案' :
+                      appState === AppState.GENERATING_VISUALS ? 'FVビジュアル生成中...' :
+                        '最終FV確認'}
                   </h2>
 
                   {appState === AppState.LP_CREATED && (
@@ -492,8 +492,8 @@ const App: React.FC = () => {
 
 const PhaseStepper: React.FC<{ currentAppState: AppState }> = ({ currentAppState }) => {
   const steps = [
-    { id: 1, name: '分析', icon: Layers, activeStates: [AppState.ANALYZING, AppState.ANALYSIS_COMPLETE, AppState.GENERATING_LP, AppState.LP_CREATED, AppState.GENERATING_VISUALS, AppState.VISUALS_COMPLETE] },
-    { id: 2, name: 'コピー', icon: Sparkles, activeStates: [AppState.LP_CREATED, AppState.GENERATING_VISUALS, AppState.VISUALS_COMPLETE] },
+    { id: 1, name: 'FVコンセプト', icon: Layers, activeStates: [AppState.ANALYZING, AppState.ANALYSIS_COMPLETE, AppState.GENERATING_LP, AppState.LP_CREATED, AppState.GENERATING_VISUALS, AppState.VISUALS_COMPLETE] },
+    { id: 2, name: 'FV設計', icon: Sparkles, activeStates: [AppState.LP_CREATED, AppState.GENERATING_VISUALS, AppState.VISUALS_COMPLETE] },
     { id: 3, name: 'ビジュアル', icon: ImageIcon, activeStates: [AppState.VISUALS_COMPLETE] }
   ];
 
