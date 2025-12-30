@@ -25,6 +25,14 @@ export interface ProductProfile {
   scarcity?: string;
   uniqueness?: string;
   trackRecord?: string;
+  winningAxes?: AppealAxis[]; // AI generates 3 proposed angles
+}
+
+export interface AppealAxis {
+  id: string; // 'axis_1', 'axis_2', 'axis_3'
+  title: string; // e.g. "コスパ重視軸"
+  reason: string; // Why this axis works
+  targetEmotion: string; // e.g. "お得感", "安心感"
 }
 
 export interface DesignSpec {

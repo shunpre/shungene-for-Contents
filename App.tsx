@@ -113,7 +113,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleGenerateLP = async () => {
+  const handleGenerateLP = async (axis?: AppealAxis) => {
     if (!productProfile) return;
 
     setAppState(AppState.GENERATING_LP);
@@ -121,7 +121,8 @@ const App: React.FC = () => {
     setVisualProgressIndex(-1);
 
     try {
-      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment, isMangaMode);
+      // Pass the selected axis to the generator
+      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment, isMangaMode, axis);
       setSwipeLP(lp);
       setAppState(AppState.LP_CREATED);
     } catch (err: any) {
@@ -425,18 +426,50 @@ const App: React.FC = () => {
                   <AnalysisResult profile={productProfile} />
 
                   {appState === AppState.ANALYSIS_COMPLETE && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4">
                       <div>
-                        <h3 className="font-bold text-indigo-900">Step 2: FV構成案の作成</h3>
-                        <p className="text-sm text-indigo-700">製品プロファイルを元にファーストビューを設計します。</p>
+                        <h3 className="font-bold text-indigo-900 mb-2">Step 2: FV戦略の選択</h3>
+                        <p className="text-sm text-indigo-700">AIが導き出した「売れる3つの訴求軸」から、作成したいアングルを選んでください。</p>
                       </div>
-                      <button
-                        onClick={handleGenerateLP}
-                        className="group relative inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
-                      >
-                        <Sparkles className="w-4 h-4 mr-2 text-yellow-300" />
-                        FV案を生成する
-                      </button>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {productProfile?.winningAxes?.map((axis) => (
+                          <div key={axis.id} className="bg-white p-4 rounded-lg shadow-sm border border-indigo-100 flex flex-col hover:shadow-md transition-shadow">
+                            <div className="mb-3">
+                              <h4 className="font-bold text-gray-900 border-b border-gray-100 pb-2 mb-2">
+                                {axis.title}
+                              </h4>
+                              <p className="text-xs text-gray-600 line-clamp-3 h-12 leading-tight mb-2">
+                                {axis.reason}
+                              </p>
+                              <div className="bg-indigo-50 px-2 py-1 rounded text-[10px] text-indigo-600 font-semibold inline-block">
+                                狙い: {axis.targetEmotion}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleGenerateLP(axis)}
+                              className="mt-auto w-full group relative inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-md hover:bg-gray-800 transition-all shadow hover:shadow-lg"
+                            >
+                              <Sparkles className="w-3 h-3 mr-1.5 text-yellow-300" />
+                              この軸で生成
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Fallback if no axes generated (older data) */}
+                        {(!productProfile?.winningAxes || productProfile.winningAxes.length === 0) && (
+                          <div className="col-span-3 text-center p-4">
+                            <p className="text-sm text-gray-500 mb-4">訴求軸データがありません。標準モードで生成します。</p>
+                            <button
+                              onClick={() => handleGenerateLP()}
+                              className="group relative inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+                            >
+                              <Sparkles className="w-4 h-4 mr-2 text-yellow-300" />
+                              FV案を生成する (標準)
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { ProductProfile, UploadedFile, SwipeLP, SwipeScreen, DesignSpec } from '../types';
+import { ProductProfile, UploadedFile, SwipeLP, SwipeScreen, DesignSpec, AppealAxis } from '../types';
 
 const USE_MOCK_API = true; // Set to false to use real API
 
@@ -62,9 +62,23 @@ const PRODUCT_PROFILE_SCHEMA: Schema = {
     authority: { type: Type.STRING, description: "権威性を示す要素（例：医師推奨、No.1獲得、受賞歴、メディア掲載）。不明な場合は空文字。" },
     scarcity: { type: Type.STRING, description: "限定性や緊急性（例：残りわずか、期間限定、先着順）。不明な場合は空文字。" },
     uniqueness: { type: Type.STRING, description: "他社にはない独自性（例：特許取得、世界初、独自成分）。不明な場合は空文字。" },
-    trackRecord: { type: Type.STRING, description: "実績（例：累計販売数、満足度、リピート率）。不明な場合は空文字。" }
+    trackRecord: { type: Type.STRING, description: "実績（例：累計販売数、満足度、リピート率）。不明な場合は空文字。" },
+    winningAxes: {
+      type: Type.ARRAY,
+      description: "この商品の売れる「訴求軸（切り口）」を3つ提案してください。",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          title: { type: Type.STRING, description: "訴求軸のタイトル（例：コスパ重視軸、権威性軸、限定性軸）" },
+          reason: { type: Type.STRING, description: "なぜこの切り口が有効なのかの理由" },
+          targetEmotion: { type: Type.STRING, description: "ターゲットのどのような感情を刺激するか" }
+        },
+        required: ["id", "title", "reason", "targetEmotion"]
+      }
+    }
   },
-  required: ["productName", "category", "targetAudience", "painPoints", "solutions", "uniqueValueProposition", "toneOfVoice"]
+  required: ["productName", "category", "targetAudience", "painPoints", "solutions", "uniqueValueProposition", "toneOfVoice", "winningAxes"]
 };
 
 const SWIPE_SCREEN_SCHEMA: Schema = {
@@ -264,7 +278,27 @@ export const analyzeProductContext = async (
         authority: "累計販売100万袋突破",
         scarcity: "毎月先着500名様限定",
         uniqueness: "特許取得の独自酵素配合",
-        trackRecord: "リピート率92%"
+        trackRecord: "リピート率92%",
+        winningAxes: [
+          {
+            id: 'axis_cost',
+            title: "圧倒的コスパ軸",
+            reason: "初回980円という低価格は、価格に敏感な層にとって最強のフックになるため。",
+            targetEmotion: "お得感・試してみようという気軽さ"
+          },
+          {
+            id: 'axis_easy',
+            title: "タイパ・手軽さ軸",
+            reason: "「1日1粒」という手軽さは、忙しい現代人の「面倒くさい」という心理的ハードルを下げるため。",
+            targetEmotion: "楽に解決できるという安心感"
+          },
+          {
+            id: 'axis_authority',
+            title: "権威性・信頼軸",
+            reason: "「医師監修」「No.1」などの実績は、失敗したくない保守的な層に刺さるため。",
+            targetEmotion: "これなら間違いないという確信"
+          }
+        ]
       },
       summary: "モックデータによる分析結果です。",
       hypothetical: false
@@ -306,7 +340,11 @@ export const analyzeProductContext = async (
          - **独自性**: 特許、独自成分、世界初などの差別化要素。
          - **実績**: 販売数、満足度、リピート率、導入社数。
 
-    2. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
+    2. **【最重要】訴求軸の抽出**:
+       - この商品が最も売れるための「切り口（アングル）」を**3つ**考案し、\`winningAxes\` に格納してください。
+       - それぞれの軸は、ターゲットの異なる感情やニーズに訴えかける全く別の角度にしてください（例：機能軸、感情軸、社会的証明軸など）。
+
+    3. **Google検索による補完**: 次に、Google検索を使用して、競合他社、市場トレンド、ターゲット層の悩み（知恵袋など）をリサーチし、情報を補完してください。
     
     **重要: 情報が取得できない場合の対応**
     - URLが検索でヒットしない、またはアクセスできない場合でも、**絶対に「不明」「未設定」などの空欄で返さないでください。**
@@ -394,48 +432,31 @@ export const generateSwipeLP = async (
   profile: ProductProfile,
   apiKey: string,
   targetSegment: TargetSegment = 'latent',
-  isMangaMode: boolean = false
+  isMangaMode: boolean = false,
+  selectedAxis?: AppealAxis // NEW: Optional axis selection
 ): Promise<SwipeLP> => {
   if (USE_MOCK_API) {
-    console.log("Using Mock API for generateSwipeLP");
+    console.log("Using Mock API for generateSwipeLP", selectedAxis);
     await delay(2000);
-    if (targetSegment === 'manifest') {
-      return {
-        concept: "Mock Concept: High-End Supplement (Manifest)",
-        mainCharacterDesign: "日本人女性、自信に満ちた表情、プロフェッショナルな装い",
-        screens: [
-          {
-            order: 1,
-            type: 'cta',
-            title: "【50%OFF】代謝ケア革命",
-            mainCopy: "1日1粒で、理想のカラダへ。\n今だけ初回980円。",
-            visualStyle: 'standard',
-            designSpec: {
-              layoutBlueprint: "Impactful Poster Style: Full screen model holding product, big offer text overlay.",
-              visualAssetInstruction: "Japanese model holding the supplement bottle, smiling confidently. Overlay text: '50% OFF'.",
-              typographyInstruction: "Bold, Gold & Black, Luxury feel",
-              colorPalette: "#Gold #Black"
-            }
-          }
-        ]
-      };
-    }
+    // ... existing mock logic with light customization based on axis ...
+    let axisTheme = "Standard";
+    if (selectedAxis) axisTheme = selectedAxis.title;
 
     return {
-      concept: "Mock Concept: Easy Diet (Latent)",
-      mainCharacterDesign: "30代日本人女性、オフィスカジュアル、少し疲れた表情から笑顔へ",
+      concept: `FV Concept: ${axisTheme} Approach`,
+      mainCharacterDesign: "日本人女性",
       screens: [
         {
           order: 1,
-          type: 'hook',
-          title: "まだ無理なダイエットしてる？",
-          mainCopy: "辛い食事制限も、激しい運動も、もう必要ありません。",
+          type: 'cta',
+          title: selectedAxis ? `【${selectedAxis.title}】衝撃の事実` : "【50%OFF】代謝ケア革命",
+          mainCopy: selectedAxis ? `${selectedAxis.reason}\n${selectedAxis.targetEmotion}をお届けします。` : "1日1粒で、理想のカラダへ。\n今だけ初回980円。",
           visualStyle: 'standard',
           designSpec: {
-            layoutBlueprint: "インパクトのある問いかけ",
-            visualAssetInstruction: "驚いた表情の日本人女性",
-            typographyInstruction: "太字で強調",
-            colorPalette: "#FF0000"
+            layoutBlueprint: "Impactful Poster Style",
+            visualAssetInstruction: "High quality hero shot",
+            typographyInstruction: "Bold",
+            colorPalette: "#Gold"
           }
         }
       ]
@@ -459,6 +480,20 @@ export const generateSwipeLP = async (
       2. **WHAT** is the benefit? (Catch Copy)
       3. **WHY** now? (Offer / Authority)
     
+    ${selectedAxis ? `
+    **KEY DIRECTIVE: APPEAL AXIS STRATEGY**
+    You MUST focus strictly on the following "Appeal Axis" (Selling Angle):
+    - **Axis Title**: ${selectedAxis.title}
+    - **Reasoning**: ${selectedAxis.reason}
+    - **Target Emotion**: ${selectedAxis.targetEmotion}
+    
+    **Tone & Copy Instruction**:
+    - Ignore generic benefits. **Sharpen the edge** based on the above axis.
+    - If "Cost", focus on price/value comparison.
+    - If "Authority", focus on trust/awards.
+    - If "Result/Speed", focus on immediate changes.
+    ` : ''}
+    
     **ELEMENTS TO INCLUDE (All in this ONE slide)**:
     - **Visual**: A high-quality product hero shot or a target persona experiencing the benefit.
     - **Catch Copy**: Short, punchy, benefit-driven. (Maximum 15 chars recommended).
@@ -467,7 +502,7 @@ export const generateSwipeLP = async (
     
     **OUTPUT SCHEMA**:
     - \`screens\`: Array containing EXACTLY 1 item.
-    - \`concept\`: Brief description of this FV's angle (e.g., "Fear-based approach", "Authority-based approach").
+    - \`concept\`: Brief description of this FV's angle.
     - **ALWAYS generate \`designSpec\`**.
   `;
 
