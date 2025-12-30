@@ -334,6 +334,7 @@ const prompt = `
     *   **キラーフレーズ**: 「〇〇な方へ」「緊急」「ついに解禁」など、フックとなる定型句。
     *   **フォント**: ゴシック（力強さ）、明朝（高級感）、手書き（親近感）などの使い分け。
     *   **カラー**: メインカラー、アクセントカラー（CTAボタン）の意図。
+    *   **【自由考察(designInsight)】**: 上記の項目に当てはまらないが、デザイナーとして気になった点、天才的な工夫、あるいは改善点などを自由に記述してください。
 
     ---
 
@@ -345,6 +346,7 @@ const prompt = `
     *   **ベネフィット**: 機能ではなく「変化」。これを使うとどうなるか。
     *   **エビデンス**: 創業年数、成分、満足度、販売数などの「証拠」。
     *   **オファー**: 初回価格、返金保証、特典など、背中を押す条件。
+    *   **【自由考察(strategicInsight)】**: マーケターとして感じた「売れるための全体戦略」や「逆転の発想」などを自由に記述してください。形式に囚われる必要はありません。
 
     ---
 
@@ -384,9 +386,10 @@ const prompt = `
             "tone": { "type": "string", "description": "デザインのトーン" },
             "killerPhrases": { "type": "array", "items": { "type": "string" }, "description": "使われているキラーフレーズ" },
             "fontAnalysis": { "type": "string", "description": "フォント設計" },
-            "colorDesign": { "type": "string", "description": "カラー設計" }
+            "colorDesign": { "type": "string", "description": "カラー設計" },
+            "designInsight": { "type": "string", "description": "デザインに関する自由な考察・発見" }
           },
-          "required": ["elementBreakdown", "tone", "colorDesign"]
+          "required": ["elementBreakdown", "tone", "colorDesign", "designInsight"]
         },
         "productAnalysis": {
           "type": "object",
@@ -395,9 +398,10 @@ const prompt = `
             "usp": { "type": "string" },
             "benefit": { "type": "string" },
             "evidence": { "type": "array", "items": { "type": "string" } },
-            "offer": { "type": "string" }
+            "offer": { "type": "string" },
+            "strategicInsight": { "type": "string", "description": "戦略に関する自由な考察・発見" }
           },
-          "required": ["persona", "usp", "benefit", "offer"]
+          "required": ["persona", "usp", "benefit", "offer", "strategicInsight"]
         }
       },
       "required": ["productName", "fvAnalysis", "productAnalysis", "winningAxes"]

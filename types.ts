@@ -36,6 +36,7 @@ export interface ProductProfile {
     killerPhrases: string[]; // キラーフレーズのパターン
     fontAnalysis: string; // フォント選びのロジック
     colorDesign: string; // カラー設計
+    designInsight: string; // [自由考察] 既存の枠に収まらないデザインの気づきや提案
   };
 
   // NEW: Detailed Product Strategy Analysis (Refining existing fields)
@@ -45,6 +46,7 @@ export interface ProductProfile {
     benefit: string; // ベネフィット
     evidence: string[]; // エビデンス
     offer: string; // オファー
+    strategicInsight: string; // [自由考察] マーケティングの全体像や特筆すべき戦略的発見
   };
 }
 
