@@ -19,8 +19,7 @@ const App: React.FC = () => {
   const [productProfile, setProductProfile] = useState<ProductProfile | null>(null);
   const [swipeLP, setSwipeLP] = useState<SwipeLP | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [targetSegment, setTargetSegment] = useState<TargetSegment>('latent');
-  const [isMangaMode, setIsMangaMode] = useState<boolean>(false);
+  // Removed targetSegment and isMangaMode states as we now focus on Axis-Based FV generation only
 
   // Visual Phase State (Tracks current screen being processed)
   const [visualProgressIndex, setVisualProgressIndex] = useState<number>(-1);
@@ -31,20 +30,24 @@ const App: React.FC = () => {
 
   const checkApiKey = async () => {
     setIsCheckingKey(true);
-    // 1. Check AI Studio environment
-    if (window.aistudio && window.aistudio.hasSelectedApiKey) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      setHasApiKey(hasKey);
-    }
-    // 2. Check Environment Variable (injected by Vite)
-    else if (process.env.GEMINI_API_KEY) {
-      setApiKey(process.env.GEMINI_API_KEY);
-      setHasApiKey(true);
-    }
-    // 3. No Local Storage Fallback (User request: Always ask for key)
-    else {
-      setHasApiKey(false);
-    }
+    // TEMPORARY: Bypass API Key check for UI testing as requested
+    // This allows the user to see the main UI without inputting a key every time.
+    // The actual API calls will fail or use mock mode if configured.
+    setHasApiKey(true);
+    setApiKey('temporary_bypass_key');
+
+    // Original Logic (Commented out for now)
+    // if (window.aistudio && window.aistudio.hasSelectedApiKey) {
+    //   const hasKey = await window.aistudio.hasSelectedApiKey();
+    //   setHasApiKey(hasKey);
+    // }
+    // else if (process.env.GEMINI_API_KEY) {
+    //   setApiKey(process.env.GEMINI_API_KEY);
+    //   setHasApiKey(true);
+    // }
+    // else {
+    //   setHasApiKey(false);
+    // }
     setIsCheckingKey(false);
   };
 
@@ -86,30 +89,20 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (files.length === 0) return;
-    if (!hasApiKey) {
-      alert("APIキーが必要です。");
-      return;
-    }
 
     setAppState(AppState.ANALYZING);
     setError(null);
     setProductProfile(null);
-    setSwipeLP(null);
-    setVisualProgressIndex(-1);
 
     try {
-      const { profile } = await analyzeProductContext(files, apiKey, targetSegment);
-      setProductProfile(profile);
+      // Defaulting to 'latent' internally for analysis structure
+      const result = await analyzeProductContext(files, apiKey, 'latent');
+      setProductProfile(result.profile);
       setAppState(AppState.ANALYSIS_COMPLETE);
     } catch (err: any) {
       console.error(err);
-      if (err.message && err.message.includes("Requested entity was not found")) {
-        setHasApiKey(false);
-        setError("APIキーが無効または選択されていません。キーを再選択してください。");
-      } else {
-        setError(err.message || "製品データの分析に失敗しました。もう一度お試しください。");
-      }
-      setAppState(AppState.ERROR);
+      setError(err.message || "分析に失敗しました。APIキーを確認してください。");
+      setAppState(AppState.IDLE);
     }
   };
 
@@ -122,7 +115,8 @@ const App: React.FC = () => {
 
     try {
       // Pass the selected axis to the generator
-      const lp = await generateSwipeLP(productProfile, apiKey, targetSegment, isMangaMode, axis);
+      // Hardcoded 'latent' and false (manga mode) as they are deprecated/fixed
+      const lp = await generateSwipeLP(productProfile, apiKey, 'latent', false, axis);
       setSwipeLP(lp);
       setAppState(AppState.LP_CREATED);
     } catch (err: any) {
@@ -407,10 +401,6 @@ const App: React.FC = () => {
                   onFileUpdated={handleFileUpdated}
                   onAnalyze={handleAnalyze}
                   isAnalyzing={appState === AppState.ANALYZING}
-                  targetSegment={targetSegment}
-                  onTargetSegmentChange={setTargetSegment}
-                  isMangaMode={isMangaMode}
-                  onMangaModeChange={setIsMangaMode}
                 />
 
                 {error && (
@@ -486,40 +476,39 @@ const App: React.FC = () => {
 
             {swipeLP && (
               <div className="border-t border-gray-200 pt-10 animate-in fade-in slide-in-from-bottom-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    {appState === AppState.LP_CREATED ? '生成されたFV構成案' :
-                      appState === AppState.GENERATING_VISUALS ? 'FVビジュアル生成中...' :
-                        '最終FV確認'}
-                  </h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                    FV特化
+                  </span>
+                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                    潜在層向け
+                  </span>
+                </div>   {appState === AppState.LP_CREATED && (
+                  <button
+                    onClick={handleStartVisualPhase}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all animate-pulse"
+                  >
+                    <ImageIcon className="w-4 h-4 text-white" />
+                    Step 3: ビジュアルコンテンツを作成 (順次)
+                  </button>
+                )}
 
-                  {appState === AppState.LP_CREATED && (
-                    <button
-                      onClick={handleStartVisualPhase}
-                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all animate-pulse"
-                    >
-                      <ImageIcon className="w-4 h-4 text-white" />
-                      Step 3: ビジュアルコンテンツを作成 (順次)
-                    </button>
-                  )}
+                <div className="bg-white rounded-xl shadow-xl overflow-hidden min-h-[600px]">
+                  <SwipeLPPreview
+                    lp={swipeLP}
+                    files={files}
+                    onRegenerateScreen={handleRegenerateScreen}
+                    onRegenerateDesign={handleRegenerateDesign}
+                    onThumbnailGenerated={() => { }}
+                    apiKey={apiKey}
+                  />
                 </div>
-
-                <SwipeLPPreview
-                  lpData={swipeLP}
-                  appState={appState}
-                  visualProgressIndex={visualProgressIndex}
-                  onUpdateScreen={handleUpdateScreen}
-                  onRegenerateScreen={handleRegenerateScreen}
-                  onRegenerateVisual={handleRegenerateVisual}
-                  onUndoVisual={handleUndoVisual}
-                  onRedoVisual={handleRedoVisual}
-                />
               </div>
             )}
           </>
         )}
       </main>
-    </div>
+    </div >
   );
 };
 

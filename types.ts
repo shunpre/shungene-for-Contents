@@ -7,7 +7,7 @@ export interface UploadedFile {
   size: number;
   mimeType?: string;
   data?: string; // Base64 encoded string
-  assetType?: 'product' | 'character' | 'voice' | 'analysis_material' | 'design_reference' | 'other'; // User-defined asset category
+  assetType?: 'product' | 'character' | 'voice' | 'analysis_material' | 'design_reference' | 'product_info' | 'competitor_info' | 'other'; // User-defined asset category
 }
 
 export interface ProductProfile {
