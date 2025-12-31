@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [inputApiKey, setInputApiKey] = useState<string>('');
+  const [modelId, setModelId] = useState<string>('gemini-3-pro-preview'); // Default desired model
   const [isCheckingKey, setIsCheckingKey] = useState<boolean>(true);
 
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -30,24 +31,20 @@ const App: React.FC = () => {
 
   const checkApiKey = async () => {
     setIsCheckingKey(true);
-    // TEMPORARY: Bypass API Key check for UI testing as requested
-    // This allows the user to see the main UI without inputting a key every time.
-    // The actual API calls will fail or use mock mode if configured.
-    setHasApiKey(true);
-    setApiKey('temporary_bypass_key');
 
-    // Original Logic (Commented out for now)
-    // if (window.aistudio && window.aistudio.hasSelectedApiKey) {
-    //   const hasKey = await window.aistudio.hasSelectedApiKey();
-    //   setHasApiKey(hasKey);
-    // }
-    // else if (process.env.GEMINI_API_KEY) {
-    //   setApiKey(process.env.GEMINI_API_KEY);
-    //   setHasApiKey(true);
-    // }
-    // else {
-    //   setHasApiKey(false);
-    // }
+    // Check for API key in environment variables (for local dev) or AI Studio (if embedded)
+    if (window.aistudio && window.aistudio.hasSelectedApiKey) {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      setHasApiKey(hasKey);
+    }
+    else if (process.env.GEMINI_API_KEY) {
+      setApiKey(process.env.GEMINI_API_KEY);
+      setHasApiKey(true);
+    }
+    else {
+      setHasApiKey(false);
+      setApiKey('');
+    }
     setIsCheckingKey(false);
   };
 
@@ -62,9 +59,22 @@ const App: React.FC = () => {
   };
 
   const handleSaveApiKey = () => {
-    if (!inputApiKey.trim()) return;
-    // localStorage.setItem('gemini_api_key', inputApiKey.trim()); // Persistence disabled
-    setApiKey(inputApiKey.trim());
+    if (!inputApiKey) return;
+
+    // Sanitize input: Remove spaces (half/full width), newlines, and non-ASCII chars mostly
+    // API keys are usually alphanumeric and special chars, no Japanese allowed.
+    const sanitizedKey = inputApiKey
+      .replace(/[\u3000\s]/g, '') // Remove full-width space and normal whitespace
+      .replace(/[\r\n]/g, '')     // Remove newlines
+      .trim();
+
+    // Optionally check if key contains non-ASCII and warn (but for now just save the cleaned version)
+    if (sanitizedKey !== inputApiKey) {
+      console.log("Sanitized API Key input");
+      setInputApiKey(sanitizedKey); // Update input field to show sanitized version
+    }
+
+    setApiKey(sanitizedKey);
     setHasApiKey(true);
   };
 
@@ -88,15 +98,20 @@ const App: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
+    console.log("Analyzing with API Key (partial):", apiKey ? apiKey.substring(0, 5) + '...' : 'NONE');
     if (files.length === 0) return;
+    if (!apiKey) {
+      setError("APIキーが設定されていません。画面右上の設定を確認してください。");
+      return;
+    }
 
     setAppState(AppState.ANALYZING);
     setError(null);
     setProductProfile(null);
 
     try {
-      // Defaulting to 'latent' internally for analysis structure
-      const result = await analyzeProductContext(files, apiKey, 'latent');
+      // Defaulting to 'latent' internally for analysis structure, passing modelId
+      const result = await analyzeProductContext(files, apiKey, 'latent', modelId);
       setProductProfile(result.profile);
       setAppState(AppState.ANALYSIS_COMPLETE);
     } catch (err: any) {
@@ -356,6 +371,18 @@ const App: React.FC = () => {
               </button>
             ) : (
               <div className="flex flex-col gap-3 max-w-md mx-auto">
+                {/* Model ID Input (Added) */}
+                <div className="flex items-center gap-2 bg-white px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500">
+                  <Sparkles className="w-5 h-5 text-indigo-500 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Model ID (default: gemini-3-pro-preview)"
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium text-gray-700 placeholder-gray-400"
+                    value={modelId}
+                    onChange={(e) => setModelId(e.target.value)}
+                  />
+                </div>
+
                 <input
                   type="password"
                   placeholder="Gemini API Key (AI Studioで取得)"
@@ -368,7 +395,7 @@ const App: React.FC = () => {
                   disabled={!inputApiKey}
                   className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  APIキーを保存して開始
+                  設定を保存して開始
                 </button>
                 <p className="text-xs text-gray-400 mt-2">
                   ※キーはブラウザのローカルストレージにのみ保存されます。<br />
